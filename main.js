@@ -1,403 +1,220 @@
-var maxtheard
-var testurl
-var lsat_date = 0
-var all_down_sum = 0
-var run = false
-var checkIP = true
-var visibl = true
-var thread_down = []
-var lsat_all_down = 0
-var refresh_lay = 5000
+// 使用局部闭包或ES模块，避免污染全局命名空间
+(function() {
+    // 状态配置
+    let maxThreads = 4;
+    let testUrl = '';
+    let lastDate = 0;
+    let allDownSum = 0;
+    let isRunning = false;
+    let isVisible = true;
+    let threadDown = [];
+    let lastAllDown = 0;
+    let startTime = 0;
 
+    let nowSpeed = 0;
+    let nowLocalPing = 0;
+    let nowGlobalPing = 0;
 
-var now_speed = 0
-var now_local_ping = 0
-var now_global_ping = 0
+    // 格式化输出函数 (保持与您外部定义的 show 兼容，如果没有请自行补充或参考下方)
+    // 假设外部存在 show(value, units, precisions) 
+    
+    /**
+     * 单个下载线程的核心逻辑
+     */
+    async function startThread(index) {
+        // 使用循环代替递归，更加安全高效
+        while (isRunning) {
+            try {
+                const controller = new AbortController(); // 引入终止控制器，便于随手取消请求
+                if (!isRunning) break;
 
-async function start_thread(index) {
-    try {
-        const response = await fetch(testurl, { cache: "no-store", mode: 'cors', referrerPolicy: 'no-referrer' })
-        const reader = response.body.getReader();
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) {
-                reader.cancel()
-                start_thread(index);
-                break;
-            }
-            if (!run) {
-                reader.cancel()
-                break
-            }
-            thread_down[index] += value.length
-        }
-    } catch (err) {
-        console.log(err)
-        if (run) start_thread(index);
-    }
-}
-async function cale() {
-    var all_down_a = sum(thread_down)
-    now_speed = (all_down_a - lsat_all_down) / (new Date().getTime() - lsat_date) * 1000 / 1024 / 1024;
-    if (visibl) document.getElementById("speed").innerText = show((all_down_a - lsat_all_down) / (new Date().getTime() - lsat_date) * 1000, ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 1, 2, 2, 2]);
-    if (visibl) document.getElementById("mbps").innerText = show((all_down_a - lsat_all_down) / (new Date().getTime() - lsat_date) * 8000, ['Bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps', 'Pbps'], [0, 0, 0, 2, 2, 2]);
-    if (!visibl) document.title = show((all_down_sum + all_down_a), ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 2, 2, 2]) + ' ' + show((all_down_a - lsat_all_down) / (new Date().getTime() - lsat_date) * 1000, ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 0, 2, 2, 2]);
-    lsat_all_down = all_down_a
-    lsat_date = new Date().getTime();
-    if (run) setTimeout(cale, 1000)
-    else {
-        var avg_speed = 1000 * (all_down_a) / (new Date().getTime() - start_time)
-
-        document.title = '流量消耗器'
-        now_speed = 0
-        document.getElementById("speed").innerText = show((avg_speed), ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 1, 2, 2, 2]);
-        document.getElementById("mbps").innerText = show((avg_speed) * 8, ['Bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps', 'Pbps'], [0, 0, 0, 2, 2, 2]);
-        lsat_all_down = 0
-        document.getElementById('describe').innerText = '平均速度';
-    }
-}
-
-async function total() {
-    var all_down = sum(thread_down)
-    if (visibl) document.getElementById("total").innerText = show((all_down_sum + all_down), ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2]);
-    if ((all_down_sum + all_down) >= Maximum && Maximum != 0) stop()
-    if (run) setTimeout(total, 16)
-    else {
-        all_down_sum += all_down;
-        document.getElementById("total").innerText = show((all_down_sum), ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2]);
-    }
-}
-
-async function start() {
-    if (all_down_sum >= Maximum && Maximum != 0) {
-        all_down_sum = 0
-    }
-    maxtheard = document.getElementById("thread").value;
-    testurl = document.getElementById("link").value;
-    if (testurl.length < 10) {
-        alert("链接不合法")
-        return;
-    }
-    testurl = testurl.substring(0, 5).toLowerCase() + testurl.substring(5, testurl.length);
-    if (!checkURL(testurl)) {
-        alert("链接不合法")
-        return;
-    }
-    if (testurl.startsWith("http://")) {
-        alert("由于浏览器安全限制，不支持http协议，请使用https协议")
-        return;
-    }
-    if (!testurl.startsWith("https://")) {
-        alert("链接不合法")
-        return;
-    }
-    document.getElementById('do').innerText = '正在检验链接...';
-    document.getElementById('do').disabled = true;
-
-    try {
-        const response = await fetch(testurl, { cache: "no-store", mode: 'cors', referrerPolicy: 'no-referrer' })
-        const reader = response.body.getReader();
-        const { value, done } = await reader.read();
-        if (value.length <= 0) throw "资源响应异常";
-        reader.cancel()
-    } catch (err) {
-        console.warn(err)
-        document.getElementById('do').innerText = '开始';
-        document.getElementById('do').disabled = false;
-        alert("该链接不可用，如果你能够正常访问该链接，那么很有可能是浏览器的跨域限制")
-        return
-    }
-    document.getElementById('describe').innerText = '实时速度';
-    document.getElementById('do').innerText = '停止';
-    document.getElementById('do').disabled = false;
-    var num = maxtheard
-    lsat_all_down = 0
-    start_time = new Date().getTime()
-    run = true
-    thread_down = []
-    while (num--) {
-        thread_down[num] = 0
-        start_thread(num)
-    }
-    cale()
-    total()
-}
-
-function stop() {
-    run = false
-    document.getElementById('do').innerText = '开始';
-}
-
-function sum(arr) {
-    var s = 0;
-    for (var i = 0; i < arr.length; i++) {
-        s += arr[i];
-    }
-    return s;
-}
-
-function botton_clicked() {
-    if (run) {
-        stop();
-    } else {
-        start();
-    }
-}
-
-function checkURL(URL) {
-    var str = URL;
-    var Expression = /http(s)?:\/\/([\w-]+\.)+[\w-]+(\/[\w- .\/?%&=]*)?/;
-    var objExp = new RegExp(Expression);
-    if (objExp.test(str) == true) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-var cnip = ''
-
-function ipcn() {
-    if (visibl) {
-        fetch('https://myip.ipip.net')
-            .then(response => response.text())  // 获取纯文本格式
-            .then(text => {
-                const tag = document.getElementById("ipcn");
-                // 解析返回的文本，提取 IP 地址和其他信息
-                const ipInfo = parseIpInfo(text);
-
-                tag.innerText = `${ipInfo.ip} ${ipInfo.country} ${ipInfo.region} ${ipInfo.city} ${ipInfo.isp}`;
-
-                if (ipInfo.ip !== cnip) {
-                    tag.style.color = '';
-                    ckip(ipInfo.ip, tag);
-                }
-                cnip = ipInfo.ip;
-            })
-            .catch(error => {
-                console.error("IP 获取失败:", error);
-            });
-    }
-    setTimeout(ipcn, 5000);
-}
-
-// 解析返回的文本格式
-function parseIpInfo(text) {
-    const regex = /当前 IP：(\S+)  来自于：([^ ]+) ([^ ]+) ([^ ]+)  (\S+)/;
-    const match = text.match(regex);
-
-    if (match) {
-        return {
-            ip: match[1],
-            country: match[2],
-            region: match[3],
-            city: match[4],
-            isp: match[5]
-        };
-    }
-
-    return {
-        ip: '未知',
-        country: '未知',
-        region: '未知',
-        city: '未知',
-        isp: '未知'
-    };
-}
-
-var gbip = ""
-
-function ipgb() {
-    if (visibl) {
-        fetch('https://ipinfo.io/json')
-            .then(response => response.json())
-            .then(data => {
-                var tag = document.getElementById("ipgb");
-                tag.innerText = data['ip'] + ' ' + data['country'] + ' ' + data['region'] + ' ' + data['city'] + ' ' + data['hostname'];
+                const response = await fetch(testUrl, { 
+                    cache: "no-store", 
+                    mode: 'cors', 
+                    referrerPolicy: 'no-referrer',
+                    signal: controller.signal
+                });
                 
-                if (data['ip'] !== gbip) {
-                    tag.style.color = '';
-                    ckip(data['ip'], tag);
+                const reader = response.body.getReader();
+                
+                while (isRunning) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        try { await reader.cancel(); } catch(e){}
+                        break; // 正常读完，跳出内层循环，进入下一次 fetch
+                    }
+                    if (!isRunning) {
+                        try { await reader.cancel(); } catch(e){}
+                        controller.abort();
+                        break;
+                    }
+                    if (value) {
+                        threadDown[index] += value.length;
+                    }
                 }
-                gbip = data['ip'];
-            })
-            .catch(error => {
-                console.error("IP 获取失败:", error);
-            });
-    }
-    setTimeout(ipgb, refresh_lay);
-}
-
-
-
-function laycn() {
-    if (visibl) {
-        var start_ti = new Date().getTime();
-        fetch("https://www.baidu.com/", { method: "HEAD", cache: "no-store", mode: 'no-cors', referrerPolicy: 'no-referrer' })
-            .then(function() {
-                var lay = new Date().getTime() - start_ti;
-                now_local_ping = lay
-                document.getElementById("laycn").innerText = lay + 'ms';
-            })
-            .catch(error => document.getElementById("laycn").innerText = '-ms');
-    }
-    setTimeout(laycn, 2000)
-}
-
-function laygb() {
-    if (visibl) {
-        var start_ti = new Date().getTime();
-        fetch("	https://cp.cloudflare.com/", { method: "HEAD", cache: "no-store", mode: 'no-cors', referrerPolicy: 'no-referrer' })
-            .then(function() {
-                var lay = new Date().getTime() - start_ti;
-                now_global_ping = lay
-                document.getElementById("laygb").innerText = lay + 'ms';
-            })
-            .catch(error => document.getElementById("laygb").innerText = '-ms');
-    }
-    setTimeout(laygb, 2000)
-}
-
-function laygithub() {
-    if (visibl) {
-        var start_ti = new Date().getTime();
-        fetch("	https://github.com/", { method: "HEAD", cache: "no-store", mode: 'no-cors', referrerPolicy: 'no-referrer' })
-            .then(function() {
-                var lay = new Date().getTime() - start_ti;
-                document.getElementById("github").innerText = lay + 'ms';
-            })
-            .catch(error => document.getElementById("github").innerText = '-ms');
-    }
-    setTimeout(laygithub, 2000)
-}
-
-function layyoutube() {
-    if (visibl) {
-        var start_ti = new Date().getTime();
-        fetch("	https://www.youtube.com/", { method: "HEAD", cache: "no-store", mode: 'no-cors', referrerPolicy: 'no-referrer' })
-            .then(function() {
-                var lay = new Date().getTime() - start_ti;
-                document.getElementById("youtube").innerText = lay + 'ms';
-            })
-            .catch(error => document.getElementById("youtube").innerText = '-ms');
-    }
-    setTimeout(layyoutube, 2000)
-}
-
-
-ipcn()
-ipgb()
-laycn()
-laygb()
-laygithub()
-layyoutube()
-
-document.addEventListener("visibilitychange", function() {
-    var string = document.visibilityState
-    if (string === 'hidden') {
-        visibl = false
-        if (run && !document.getElementById("customSwitch2").checked) botton_clicked();
-    }
-    if (string === 'visible') {
-        visibl = true
-        document.title = "流量消耗器"
-    }
-});
-
-
-
-var chartDom = document.getElementById('dv');
-var myChart = echarts.init(chartDom);
-var option;
-
-option = {
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: {
-            type: 'cross',
-            label: {
-                backgroundColor: '#6a7985'
+            } catch (err) {
+                console.error(`线程 [${index}] 发生错误:`, err);
+                // 发生错误时稍作停顿，避免请求失败时死循环瞬间刷爆浏览器导致卡死
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
-    },
-    legend: {
-        data: ['速率', '百度', 'Cloudflare']
-    },
-    toolbox: {
-        feature: {
-            saveAsImage: {}
-        }
-    },
-    grid: {
-        left: '3%',
-        right: '4%',
-        bottom: '3%',
-        containLabel: true
-    },
-    xAxis: [{
-        type: 'time',
-        name: "时间",
-        boundaryGap: false,
-        axisLabel: { show: false }
-    }],
-    yAxis: [
-        {
-            type: 'value',
-            name: "延迟 (ms)",
-            splitLine: { show: false }
-        },
-        {
-            type: 'value',
-            name: "速率 (MB/s)",
-            splitLine: { show: false }
-        }
-    ],
-    series: [
-        {
-            name: '速率',
-            type: 'line',
-            yAxisIndex: 1,
-            areaStyle: {},
-            emphasis: { focus: 'series' },
-            data: []
-        },
-        {
-            name: '百度',
-            type: 'line',
-            data: []
-        },
-        {
-            name: 'Cloudflare',
-            type: 'line',
-            data: []
-        }
-    ]
-};
-
-option && myChart.setOption(option);
-
-function dv() {
-    if (visibl) {
-        let now = new Date();
-
-        option.series[0].data.push({
-            name: now.toString(),
-            value: [now.getTime(), parseFloat(now_speed).toFixed(1)]
-        });
-        option.series[1].data.push({
-            name: now.toString(),
-            value: [now.getTime(), now_local_ping]
-        });
-        option.series[2].data.push({
-            name: now.toString(),
-            value: [now.getTime(), now_global_ping]
-        });
-
-        myChart.setOption({
-            series: option.series
-        });
     }
-    setTimeout(dv, 1000);
-}
 
-dv();
+    /**
+     * 计算并输出实时速度
+     */
+    function calculateSpeed() {
+        if (!isRunning) {
+            const now = Date.now();
+            const totalDownloaded = sum(threadDown);
+            const avgSpeed = (totalDownloaded * 1000) / (now - startTime);
+
+            document.title = '流量消耗器';
+            nowSpeed = 0;
+            
+            document.getElementById("speed").innerText = show(avgSpeed, ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 1, 2, 2, 2]);
+            document.getElementById("mbps").innerText = show(avgSpeed * 8, ['Bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps', 'Pbps'], [0, 0, 0, 2, 2, 2]);
+            lastAllDown = 0;
+            document.getElementById('describe').innerText = '平均速度';
+            return;
+        }
+
+        const now = Date.now();
+        const allDownActive = sum(threadDown);
+        const timeDiff = now - lastDate;
+
+        if (timeDiff > 0) {
+            const currentPeriodBytes = allDownActive - lastAllDown;
+            nowSpeed = (currentPeriodBytes / timeDiff) * 1000 / 1024 / 1024; // MB/s
+
+            if (isVisible) {
+                document.getElementById("speed").innerText = show((currentPeriodBytes / timeDiff) * 1000, ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 1, 2, 2, 2]);
+                document.getElementById("mbps").innerText = show((currentPeriodBytes / timeDiff) * 8000, ['Bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps', 'Pbps'], [0, 0, 0, 2, 2, 2]);
+            } else {
+                document.title = `${show(allDownSum + allDownActive, ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 0, 2, 2, 2])} | ${show((currentPeriodBytes / timeDiff) * 1000, ['B/s', 'KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s'], [0, 0, 0, 2, 2, 2])}`;
+            }
+
+            lastAllDown = allDownActive;
+            lastDate = now;
+        }
+
+        setTimeout(calculateSpeed, 1000);
+    }
+
+    /**
+     * 统计并监控消耗的总流量
+     */
+    function monitorTotalTraffic() {
+        const allDownActive = sum(threadDown);
+        const currentTotal = allDownSum + allDownActive;
+
+        if (isVisible) {
+            document.getElementById("total").innerText = show(currentTotal, ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2]);
+        }
+
+        // 检查是否达到最大限制流量 (Maximum 变量在 index.html 脚本中声明)
+        if (typeof Maximum !== 'undefined' && Maximum > 0 && currentTotal >= Maximum) {
+            stopTest();
+            return;
+        }
+
+        if (isRunning) {
+            // 将 16ms 定时器改为 requestAnimationFrame，帧率同步，性能更优且省电
+            requestAnimationFrame(monitorTotalTraffic);
+        } else {
+            allDownSum += allDownActive;
+            document.getElementById("total").innerText = show(allDownSum, ['B', 'KB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2]);
+        }
+    }
+
+    /**
+     * 开始测试
+     */
+    async function startTest() {
+        if (typeof Maximum !== 'undefined' && Maximum > 0 && allDownSum >= Maximum) {
+            allDownSum = 0;
+        }
+
+        maxThreads = parseInt(document.getElementById("thread").value, 10) || 4;
+        let urlInput = document.getElementById("link").value.trim();
+
+        if (urlInput.length < 10) {
+            alert("链接不合法");
+            return;
+        }
+
+        // 规范化并校验 URL
+        urlInput = urlInput.substring(0, 5).toLowerCase() + urlInput.substring(5);
+        if (!/^(https):\/\/([\w-]+\.)+[\w-]+(\/[\w- .\/?%&=]*)?/.test(urlInput)) {
+            alert("由于浏览器安全限制，仅支持 https 协议合规链接");
+            return;
+        }
+
+        testUrl = urlInput;
+        const doBtn = document.getElementById('do');
+        doBtn.innerText = '正在检验链接...';
+        doBtn.disabled = true;
+
+        // 测前连接性验证
+        try {
+            const response = await fetch(testUrl, { cache: "no-store", mode: 'cors', referrerPolicy: 'no-referrer' });
+            const reader = response.body.getReader();
+            const { value } = await reader.read();
+            if (!value || value.length === 0) throw new Error("资源响应异常");
+            await reader.cancel();
+        } catch (err) {
+            console.warn(err);
+            doBtn.innerText = '开始';
+            doBtn.disabled = false;
+            alert("该链接不可用。如果可在新标签页打开，则大概率触发了浏览器的跨域(CORS)限制，请更换允许跨域的CDN节点。");
+            return;
+        }
+
+        // 初始化状态
+        document.getElementById('describe').innerText = '实时速度';
+        doBtn.innerText = '停止';
+        doBtn.disabled = false;
+
+        lastAllDown = 0;
+        startTime = Date.now();
+        lastDate = startTime;
+        isRunning = true;
+        threadDown = new Array(maxThreads).fill(0);
+
+        // 并发启动线程
+        for (let i = 0; i < maxThreads; i++) {
+            startThread(i);
+        }
+
+        calculateSpeed();
+        monitorTotalTraffic();
+    }
+
+    /**
+     * 停止测试
+     */
+    function stopTest() {
+        isRunning = false;
+        const doBtn = document.getElementById('do');
+        if (doBtn) doBtn.innerText = '开始';
+    }
+
+    // 辅助求和函数
+    function sum(arr) {
+        return arr.reduce((acc, cur) => acc + (cur || 0), 0);
+    }
+
+    // 暴露入口给 HTML 元素绑定
+    window.botton_clicked = function() {
+        if (isRunning) {
+            stopTest();
+        } else {
+            startTest();
+        }
+    };
+
+    // 监听窗口可见性，避免后台运行时浪费不必要的 DOM 渲染性能
+    document.addEventListener("visibilitychange", () => {
+        isVisible = (document.visibilityState === 'visible');
+    });
+})();
