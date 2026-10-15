@@ -164,7 +164,7 @@ select.form-control{appearance:none}
       <div class="note"><span class="dot" style="background:#9cabff"></span>支持自定义地址，浏览器安全机制下无法读取跨域链接（跨域地址会给出提示，可在配置页检测）</div>
       <div class="note"><span class="dot" style="background:#ffa9ce"></span>速度不满意？请尝试手动切换节点，或加大运行线程（1–32）</div>
       <div class="note"><span class="dot" style="background:#f98c45"></span>消耗机场流量，建议使用海外节点；多线程流式下载持续消耗带宽，可设置流量上限自动停止</div>
-      <div class="note"><span class="dot" style="background:#16a34a"></span>右上角齿轮可打开「地址配置」：232 条地址分组管理、搜索、增删自定义、一键检测延迟/测速</div>
+      <div class="note"><span class="dot" style="background:#16a34a"></span>右上角齿轮可打开「地址配置」：161 条地址分组管理、搜索、增删自定义、一键检测延迟/测速</div>
       <div class="note"><span class="dot" style="background:#6b7280"></span>长按左上角标题与版本区域进入「伪熄屏」（纯黑全屏），双击屏幕退出，下载不中断</div>
     </div>
   </div>
@@ -286,7 +286,7 @@ select.form-control{appearance:none}
 <audio id="keepAudio" loop style="display:none"></audio>
 
 <script>
-/* ================= 地址数据（232 条 = 原项目 210 + 自定义 下载 16 + 上传 6） ================= */
+/* ================= 地址数据（161 条 = 原项目 152 + 自定义 下载 9（已并入「常用推荐」）；已按 2026-10-15 检测结果移除失败/受限链接 71 条） ================= */
 const DEFAULT_GROUPS = [
 {
 "name": "常用推荐",
@@ -305,14 +305,6 @@ const DEFAULT_GROUPS = [
 "url": "https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png"
 },
 {
-"name": "字节跳动",
-"url": "https://lf9-cdn-tos.bytecdntp.com/cdn/yuntu-index/1.0.4/case/maiteng/detailbg.png"
-},
-{
-"name": "网易",
-"url": "https://pic-bucket.ws.126.net/photo/0003/2022-04-24/H5N2082C00AJ0003NOS.jpg"
-},
-{
 "name": "Vivo",
 "url": "https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4"
 },
@@ -321,24 +313,48 @@ const DEFAULT_GROUPS = [
 "url": "https://img.cmvideo.cn/publish/noms/2022/10/14/1O3VIGPVP6HTS.jpg"
 },
 {
-"name": "和彩云",
-"url": "https://img.mcloud.139.com/material_prod/material_media/20221128/1669626861087.png"
-},
-{
 "name": "天翼云",
 "url": "https://desk.ctyun.cn/desktop/software/clientsoftware/download/ff3e71dcc21152307f54700c62e5aef6"
 },
 {
-"name": "哔哩哔哩",
-"url": "https://i2.hdslb.com/bfs/openplatform/202506/ndIMphTF1750406775833.png"
-},
-{
-"name": "Cachefly Test [Global]",
-"url": "https://cachefly.cachefly.net/100mb.test"
-},
-{
 "name": "Cloudflare Speed [Global]",
 "url": "https://speed.cloudflare.com/__down?bytes=1073741824"
+},
+{
+"name": "自定义下载·lf5-j1gamecdn-cn.dailygn.com",
+"url": "https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4"
+},
+{
+"name": "自定义下载·issuepcdn.baidupcs.com",
+"url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe"
+},
+{
+"name": "自定义下载·wppkg.baidupcs.com",
+"url": "https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk"
+},
+{
+"name": "自定义下载·static-d.iqiyi.com",
+"url": "https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg"
+},
+{
+"name": "自定义下载·gw.alicdn.com#1",
+"url": "https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg"
+},
+{
+"name": "自定义下载·img.alicdn.com",
+"url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
+},
+{
+"name": "自定义下载·gw.alicdn.com#2",
+"url": "https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png"
+},
+{
+"name": "自定义下载·cloud.video.taobao.com",
+"url": "https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4"
+},
+{
+"name": "自定义下载·lf9-static.bytednsdoc.com",
+"url": "https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4"
 }
 ]
 },
@@ -349,10 +365,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "中国移动云盘-静态资源1[定向]",
 "url": "https://yun.mcloud.139.com/mCloudPc/v832/mCloud_Setup-001.exe"
-},
-{
-"name": "中国移动云盘-图片资源(中国移动)",
-"url": "https://img.mcloud.139.com/material_prod/material_media/20221128/1669626861087.png"
 }
 ]
 },
@@ -360,22 +372,6 @@ const DEFAULT_GROUPS = [
 "name": "移动云手机",
 "type": "download",
 "items": [
-{
-"name": "移动云手机-图片资源1[定向]",
-"url": "https://cp.139.com/_nuxt/img/member-img.c9e62ac.png"
-},
-{
-"name": "移动云手机-图片资源2[定向]",
-"url": "https://cloudphoneh5.buy.139.com/cloudimage/dashboard/202108/1432606846652387328.png"
-},
-{
-"name": "移动云手机-图片资源3[定向]",
-"url": "https://cloud.139.com/cloudimage/dashboard/202408/1824417436380827648.png"
-},
-{
-"name": "移动云手机-静态资源1[定向]",
-"url": "https://cp.139.com/video/banner.mp4"
-},
 {
 "name": "移动云手机-静态资源3",
 "url": "https://lf3-data.volccdn.com/obj/data-static/log-sdk/collect/5.0/collect-rangers-v5.1.7.js"
@@ -419,10 +415,6 @@ const DEFAULT_GROUPS = [
 "url": "https://game.gtimg.cn/images/cf/cp/a20221219jansecond/t3_prop11.gif"
 },
 {
-"name": "腾讯游戏-静态资源2",
-"url": "https://game.gtimg.cn/images/nz/web202106/index/bc_part1.gif?0.3190485611376561"
-},
-{
 "name": "腾讯游戏-静态资源3[定向]",
 "url": "https://ossweb-img.qq.com/images/lol/web201310/skin/big10001.jpg"
 },
@@ -431,20 +423,12 @@ const DEFAULT_GROUPS = [
 "url": "https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png"
 },
 {
-"name": "Wegame-图片资源2",
-"url": "https://tgphpic-70080.picnjc.qpic.cn/g.2001885-r.6702b/feeds_article_ugc_1461967d-c4c8-4f01-b11d-b5fe1ca89936/0"
-},
-{
 "name": "Wegame-静态资源1[统计不准确]",
 "url": "https://cdn-go.cn/vasdev/web_webpersistance_v2/latest/flog.core.min.js"
 },
 {
 "name": "Wegame-静态资源2[统计不准确]",
 "url": "https://omi.cdn-go.cn/play/latest/assets/main.1840ac5c.js"
-},
-{
-"name": "Wegame-静态资源3[统计不准确]",
-"url": "https://beaconcdn.qq.com/sdk/4.3.4/beacon_web.min.js"
 },
 {
 "name": "腾讯-静态资源[统计不准确]",
@@ -489,14 +473,6 @@ const DEFAULT_GROUPS = [
 "url": "https://upos-sz-static.bilivideo.com/ssaxcode/m201120a222dw4bejcrhrq3gt815s4zd-1-SiteTool_1080.mp4"
 },
 {
-"name": "哔哩哔哩-广告1",
-"url": "https://i0.hdslb.com/bfs/vc/7a9f7ddb6dcde16031b89a3ec7d7e806aa8eeba9.webm"
-},
-{
-"name": "哔哩哔哩-广告2",
-"url": "https://i0.hdslb.com/bfs/face/03525d094e0e2a142d08181532d729615c18ec92.jpg"
-},
-{
 "name": "哔哩CDN域名-阿里CDN",
 "url": "https://s1.hdslb.com/bfs/game-static/web/caster/static/script/vue/da3f37d7fd8339357ed671a94941757e/st.zip"
 },
@@ -507,10 +483,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "哔哩哔哩-图片资源1[定向]",
 "url": "https://static.hdslb.com/images/base/icons.png"
-},
-{
-"name": "哔哩哔哩-图片资源2",
-"url": "https://tf-i0.hdslb.com/bfs/archive/e9f69c2718ea0d3813f43b9d80ef9b364368f46b.jpg"
 }
 ]
 },
@@ -571,10 +543,6 @@ const DEFAULT_GROUPS = [
 "url": "https://jmy-video.baidu.com/7b828dab3003f3841f3a026b437cf879_1280_720.mp4"
 },
 {
-"name": "百度视频-静态资源2",
-"url": "https://hk.bdstatic.com/_next/static/chunks/1232.ab8e3fcb5239645f.js"
-},
-{
 "name": "百度视频-图片资源1",
 "url": "https://avatar.bdstatic.com/it/u=3525109608,2713994146&fm=3012"
 },
@@ -587,16 +555,8 @@ const DEFAULT_GROUPS = [
 "url": "https://fenwan.cdn.bcebos.com/webgame/static/webgame/js/index.aea21658.js"
 },
 {
-"name": "百度文库-静态资源1",
-"url": "https://edu-wenku.bdimg.com/v1/na/0807/PC%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%89%88%E6%9C%AC%E5%8C%85/%E7%99%BE%E5%BA%A6%E6%96%87%E5%BA%93%20Setup%201.2.7.exe"
-},
-{
 "name": "百度文库-静态资源2",
 "url": "https://wkstatic.bdimg.com/static/ndpcwenku/static/pcCoreClient/js/views/1b65f79a0217ad721cce.js"
-},
-{
-"name": "百度输入法",
-"url": "https://imeres.baidu.com/imeres/ime-res/guanwang/img/Ubuntu_Deepin-fcitx-baidupinyin-64.zip"
 }
 ]
 },
@@ -623,22 +583,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "爱奇艺-静态资源5",
 "url": "https://security.iqiyi.com/static/cook/v1/cooksdk.js"
-},
-{
-"name": "爱奇艺-图片资源1",
-"url": "https://pic9.iqiyipic.com/image/20240912/01/ec/v_176977887_m_601_m7_440_608.webp"
-},
-{
-"name": "爱奇艺-图片资源2",
-"url": "https://pic0.iqiyipic.com/marketing/20200116/911b3739e5654f8c9e89e3a8fd51d74c.jpg"
-},
-{
-"name": "爱奇艺-图片资源3",
-"url": "https://img7.iqiyipic.com/passport/20180804/fe/12/passport_2352240096_153335810673051_1080_1080.jpg"
-},
-{
-"name": "爱奇艺-图片资源4",
-"url": "https://www.iqiyipic.com/common/fix/headicons/female04-130.png"
 },
 {
 "name": "爱奇艺-图片资源5",
@@ -689,10 +633,6 @@ const DEFAULT_GROUPS = [
 "type": "download",
 "items": [
 {
-"name": "联通官网-图片资源1(中国联通)",
-"url": "https://m1.ad.10010.com/small_video/uploadImg/1669798519261.png"
-},
-{
 "name": "联通官网-图片资源2(中国联通)",
 "url": "https://www.10010.com/wt_service_web/copyright/images/jifenshangcheng.png"
 },
@@ -703,10 +643,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "联通官网-静态资源1(中国联通)",
 "url": "https://www.10010.com/wt_service_web/js/header.js"
-},
-{
-"name": "联通云-静态资源2(中国联通)",
-"url": "https://www.cucloud.cn/templets/1/default/common/fontStyle/SourceHanSansCN-Light.otf"
 }
 ]
 },
@@ -719,10 +655,6 @@ const DEFAULT_GROUPS = [
 "url": "https://bigdata-behaviordata.189.cn:9002/chinatelecom/chinatelecom.min.js"
 },
 {
-"name": "电信官网-静态资源2(中国电信)",
-"url": "https://livepull.189.cn/live/youhui-1728184851.ts"
-},
-{
 "name": "天翼云(中国电信)",
 "url": "https://vod-origin-rjzy.gdoss.xstore.ctyun.cn/f9ea5388dc0447aa88a5b92f07f1a8f7.mp4"
 },
@@ -733,10 +665,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "天翼云盘-静态资源1(中国电信)",
 "url": "https://static.e.189.cn/open/login/page/web/v5.0/static/js/captch.min.js?v1.1"
-},
-{
-"name": "天翼云盘-图片资源1(中国电信)",
-"url": "https://api.cloud.189.cn/guns/img/recommendedPosition/20240710094316_0710web.jpg"
 },
 {
 "name": "优酷-图片资源1",
@@ -767,10 +695,6 @@ const DEFAULT_GROUPS = [
 "url": "https://portal.hc-cdn.com/cnpm-baseui/2.8.11/index.css"
 },
 {
-"name": "小米应用商店",
-"url": "https://cnbj0.fds.api.xiaomi.com/miio.files/commonfile_zip_a348bd8c21030ba605d47331d4eb4663.zip"
-},
-{
 "name": "小米开放平台-静态资源1",
 "url": "https://dev.mi.com/console/css/main.css"
 },
@@ -799,20 +723,12 @@ const DEFAULT_GROUPS = [
 "url": "https://storage.360buyimg.com/babelnode/jd-jssdk/4.2.1/jd-jssdk.js"
 },
 {
-"name": "京东商城-静态资源3",
-"url": "https://wl.jd.com/unify.min.js"
-},
-{
 "name": "京东商城-静态资源4",
 "url": "https://storage.jd.com/jdmobile/JDMALL-PC2.apk"
 },
 {
 "name": "京东商城-图片资源1",
 "url": "https://m.360buyimg.com/seckillcms/jfs/t1/155683/19/46720/143938/66de6069Fcbca5419/a04efd5dd680737d.png"
-},
-{
-"name": "京东商城-图片资源2",
-"url": "https://img10.360buyimg.com/live/jfs/t1/128947/12/26918/1361527/6260e71bE0ee85af5/ecaa17ea8dd3dddb.jpg"
 },
 {
 "name": "拼多多-静态资源1",
@@ -825,10 +741,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "拼多多-静态资源3",
 "url": "https://lpcdn.pinduoduo.com/_next/static/chunks/74769-4e08eb3c27153a5f.js"
-},
-{
-"name": "拼多多-静态资源4",
-"url": "https://dl.pddpic.com/android_dev/2021-02-08/4ff25ce6148aa99aeeba723b5891ae72.apk"
 },
 {
 "name": "拼多多-静态资源5",
@@ -851,20 +763,8 @@ const DEFAULT_GROUPS = [
 "url": "https://commimg.pddpic.com/add-crystal-outer/2023-04-11/70a3dea1-53d4-4da6-9397-d4bf2a884911.gif.slim.gif"
 },
 {
-"name": "拼多多-图片资源5",
-"url": "https://t00img.yangkeduo.com/chat/images/2022-12-12/79e0a4684de85c7b59f797819260be98.jpeg"
-},
-{
 "name": "逆水寒官网静态资源",
 "url": "https://n.v.netease.com/2018/1017/ba32725ee3a20ee1fbe874a45d1f7fa9qt.mp4"
-},
-{
-"name": "逆水寒客户端",
-"url": "https://nsh.gdl.netease.com/NGP/NGP_NSH_2.0.81143.exe"
-},
-{
-"name": "网易云游戏",
-"url": "https://nsh.gdl.netease.com/cloudgame_macos/NSH_cloud_game_for_mac_1.4.6_2023_06-02-11.dmg"
 },
 {
 "name": "MCLauncher工具(阿里CDN)",
@@ -921,10 +821,6 @@ const DEFAULT_GROUPS = [
 "url": "https://h5cdn.migufun.com/middleh5/_nuxt/9d04212.js"
 },
 {
-"name": "咪咕善跑-图片资源1(中国移动)",
-"url": "https://sportfile.migufun.com/Upload/dz/2019/0907/2405d7377e56a92f@1080x540.jpg"
-},
-{
 "name": "中国移动商城-图片资源1",
 "url": "https://img1.shop.10086.cn/goods/ts27zarfe8d5jgvs_940x7200"
 },
@@ -938,10 +834,6 @@ const DEFAULT_GROUPS = [
 "name": "移动云",
 "type": "download",
 "items": [
-{
-"name": "移动云-静态资源1",
-"url": "https://obs-wx-ysj-xnl-pro-001.obs.cidc-rp-12.joint.cmecloud.cn:443/public/upgrade/apk/baidu02/cloudphone-heyingyun-baidu02-v2.1.0-20240701_1446-release_20240701150412_sec_sign.apk"
-},
 {
 "name": "移动云-静态资源2",
 "url": "https://ecloud.eos-guangzhou-1.cmecloud.cn/op-login-static/3.6.0/js/vendor.6a12e122d36e1092fd0e.js"
@@ -967,44 +859,20 @@ const DEFAULT_GROUPS = [
 "url": "https://imgwsdl.vivo.com.cn/appstore/developer/soft/20210125/202101251051528awqa.apk"
 },
 {
-"name": "字节跳动前端公共库",
-"url": "https://lf9-cdn-tos.bytecdntp.com/cdn/yuntu-index/1.0.4/case/maiteng/detailbg.png"
-},
-{
-"name": "字节跳动-抖音",
-"url": "https://www.douyin.com/download/pc/obj/douyin-pc-client/7044145585217083655/releases/10715336/2.6.0/win32-ia32/douyin-v2.6.0-win32-ia32-douyinDownload1.exe"
-},
-{
 "name": "上海灵羊1",
 "url": "https://activity.hdslb.com/blackboard/static/20210604/4d40bc4f98f94fbc71c235832ce3efd4/hJEhL6jGOY.zip"
-},
-{
-"name": "上海灵羊2",
-"url": "https://i0.hdslb.com/bfs/sycp/creative_img/202204/757e134224a7b49d01737d72e87b3cd3.jpg"
 },
 {
 "name": "搜狐视频",
 "url": "https://photocdn.tv.sohu.com/img/20230419/pic_org_88f470db-176e-40c5-a514-a31993dabb27.jpg"
 },
 {
-"name": "搜狐门户静态",
-"url": "https://statics.itc.cn/web/v3/static/js/main-c200c3eba1.jsg"
-},
-{
 "name": "搜狐图片",
 "url": "https://p8.itc.cn/c_fit,w_1800,h_1200,q_100/images01/20230723/e23a27186e404472ab1f659a1ae18cae.jpeg"
 },
 {
-"name": "CCTV",
-"url": "https://dh5.cntv.myhwcdn.cn/asp/h5e/hls/1200/0303000a/3/default/ec48b9f8c76e49af842d4942914ad663/1.ts"
-},
-{
 "name": "新浪",
 "url": "https://i.apps.sina.cn/tqt/zip/com.sina.tianqitong_6.1892_2019.07.29.17.54.18.apk"
-},
-{
-"name": "AcFun",
-"url": "https://cdn.aixifan.com/downloads/AcFun-acfunh5-release-6.62.0.1238_x64_60b608.apk"
 },
 {
 "name": "斗鱼CDN",
@@ -1019,28 +887,8 @@ const DEFAULT_GROUPS = [
 "url": "https://devtools.qiniu.com/linux/amd64/qrsctl"
 },
 {
-"name": "鲜牛加速器(华为云CDN)",
-"url": "https://picture.xianniu.com/pc/download/4.7.3.5/xianniusetup.4.7.3.5.exe"
-},
-{
-"name": "清华大学 [稳定]",
-"url": "https://iptv.tsinghua.edu.cn/st/garbage.php?ckSize=10240"
-},
-{
 "name": "Quark_Browser(uc)",
 "url": "https://image.uc.cn/s/uae/g/2i/uninstallpg/Quark%20Browser.apk"
-},
-{
-"name": "鹿角网络-图片资源",
-"url": "https://web-ipv6.hycdn.cn/hypergryph/official/assets/img/arknights.8658b6.jpg"
-},
-{
-"name": "Linode 100MB(日本省东京市)",
-"url": "https://speedtest.tokyo2.linode.com/100MB-tokyo2.bin"
-},
-{
-"name": "香港快运",
-"url": "https://static.hkexpress.com/media/1077/crew-recruitment-banner-upload-sc.png"
 },
 {
 "name": "Vultr 1G(新加坡)",
@@ -1091,24 +939,6 @@ const DEFAULT_GROUPS = [
 ]
 },
 {
-"name": "X",
-"type": "download",
-"items": [
-{
-"name": "X-静态资源1",
-"url": "https://abs.twimg.com/responsive-web/client-web/main.ef558a8a.js"
-},
-{
-"name": "X-图片资源1",
-"url": "https://pbs.twimg.com/amplify_video_thumb/1915351264088502272/img/WtcCdzQWaZ-bbW2h.jpg"
-},
-{
-"name": "X-图片资源2",
-"url": "https://abs-0.twimg.com/emoji/v2/svg/1f914.svg"
-}
-]
-},
-{
 "name": "Apple",
 "type": "download",
 "items": [
@@ -1139,36 +969,12 @@ const DEFAULT_GROUPS = [
 "type": "download",
 "items": [
 {
-"name": "Google-图片资源1",
-"url": "https://i.ytimg.com/vi/j7WID3q1yY0/maxresdefault.jpg"
-},
-{
-"name": "Google-图片资源2",
-"url": "https://yt3.ggpht.com/PKRBxhCiGa8Y0vPmHa1E2cdjpLhUq2Pl-gESwP7kk2plGgxLdsbjyTd9VjcJwBMiY0HQ8bvx5Q=s176-c-k-c0x00ffffff-no-rj"
-},
-{
-"name": "Google-图片资源2#2",
-"url": "https://play-lh.googleusercontent.com/B5AENJqFOd91t5cWZLTQbVUm7iDWzYVM1n0Pe2RI_46dhlWMtVAUBioUvy4YMXWdwA=w240-h480-rw"
-},
-{
 "name": "Google-静态资源1",
 "url": "https://fonts.gstatic.com/s/roboto/v47/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2"
 },
 {
 "name": "Google-静态资源2",
 "url": "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=YouTube+Sans:wght@300..900&display=swap"
-},
-{
-"name": "Google-静态资源3",
-"url": "https://apis.google.com/_/scs/abc-static/_/js/k=gapi.gapi.en.BY48SQoc80o.O/m=gapi_iframes,googleapis_client/rt=j/sv=1/d=1/ed=1/rs=AHpOoo-GDP1D38zSeS8hy4T0Ij3IgC1Nkw/cb=gapi.loaded_0"
-},
-{
-"name": "Google-静态资源4",
-"url": "https://ci3.googleusercontent.com/meips/ADKq_NZqxuLeMfNcPO4Ay_a-Dou4qiiMiv4gAfViS_OKenL5VotOnzCnWQkyFbrxhhtaxPWXL82OOFfhvmdKndVr0RtgT5m-b1GuO_sG-YmnmMdYllQ3I0OO81hy7pQt=s0-d-e1-ft"
-},
-{
-"name": "Google-静态资源5",
-"url": "https://ajax.googleapis.com/ajax/libs/angular_material/1.1.9/angular-material.min.js"
 }
 ]
 },
@@ -1186,14 +992,6 @@ const DEFAULT_GROUPS = [
 "name": "广告",
 "type": "download",
 "items": [
-{
-"name": "书旗小说-视频广告01",
-"url": "https://v4-lm.adukwai.com/bs2/photo-video-mz/5190117271491827886_31e5de0351720277_4636_sl200hd15.mp4?ss=vpm"
-},
-{
-"name": "书旗小说-视频广告02",
-"url": "https://v4-lm.adukwai.com/bs2/adUnionVideo/9d088f4676a54e0b832dfc64facac497.mp4"
-},
 {
 "name": "书旗小说-图片广告01",
 "url": "https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA2NjE0ZWI3MDoxMDY2MjcyNzk1MzU0Nw==.jpg"
@@ -1233,106 +1031,6 @@ const DEFAULT_GROUPS = [
 {
 "name": "书旗小说-图片广告10",
 "url": "https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA0OWQ1OTQ3Mjo0ODkyOTI5MzA3NTQ3.jpg"
-}
-]
-},
-{
-"name": "自定义·下载地址",
-"type": "download",
-"items": [
-{
-"name": "自定义下载·8b06c261e77fac3dbe275a2430234968.dlied1.cdntips.net",
-"url": "https://8b06c261e77fac3dbe275a2430234968.dlied1.cdntips.net/dlied4.myapp.com/myapp/1104466820/cos.release-40109/10040714_com.tencent.tmgp.sgame_a4202103_11.3.1.1_QBcYZh.apk?mkey=lego_ztc&f=00&sche_type=7&cip=223.73.170.221&proto=https&access_type=&sign=1780735353.5c763961604f533d2ce7f7816e383ecc.5693883960094723e88424a05f1681fb.z1b_o4oq97NX_KbHo47pgTRBQ_p4-62-B5ACHfpA7NA&tx_domain=dlied4.myapp.com&tx_path=%2Fmyapp%2F1104466820%2F&tx_id=6c9382a8c8"
-},
-{
-"name": "自定义下载·dldir1v6.qq.com#1",
-"url": "https://dldir1v6.qq.com/weixin/android/weixin8072android3100_0x28004835_arm64.apk"
-},
-{
-"name": "自定义下载·dldir1v6.qq.com#2",
-"url": "https://dldir1v6.qq.com/weixin/Windows/WeChatSetup_x86.exe"
-},
-{
-"name": "自定义下载·media.steampowered.com",
-"url": "https://media.steampowered.com/apps/steam-android/steam-3.10.9.apk"
-},
-{
-"name": "自定义下载·ot2-gdown.baidu.com",
-"url": "https://ot2-gdown.baidu.com/appcenter/pkg/upload/8fef14924e8b969bf65011c55b7f0f94?md5hash=0d58cb32326e31818a07ce37fd84ae78&timestamp=1780905849"
-},
-{
-"name": "自定义下载·fc2-gdown.baidu.com#1",
-"url": "https://fc2-gdown.baidu.com/appcenter/pkg/upload/62f6265b29524cf90a0a0a72211af70e?md5hash=e53b2df08175d05896a9cd83342fbd73&timestamp=1780905831"
-},
-{
-"name": "自定义下载·fc2-gdown.baidu.com#2",
-"url": "https://fc2-gdown.baidu.com/8Jx58_1gyUWI0AZ27VsE36lpWgIa_okJ5ZY9SC7fTCUD_QyN_y4D2Fr0aSYdIhHuilAqmjq3B6H85ph6O9Nw05_or1W3US8NMLG4Yivo9BQ=?dynamic=1&md5hash=69c393a0d81c47f6d3fa6dd8eadf65bf&rl=1&timestamp=1780905818"
-},
-{
-"name": "自定义下载·lf5-j1gamecdn-cn.dailygn.com",
-"url": "https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4"
-},
-{
-"name": "自定义下载·issuepcdn.baidupcs.com",
-"url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe"
-},
-{
-"name": "自定义下载·wppkg.baidupcs.com",
-"url": "https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk"
-},
-{
-"name": "自定义下载·static-d.iqiyi.com",
-"url": "https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg"
-},
-{
-"name": "自定义下载·gw.alicdn.com#1",
-"url": "https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg"
-},
-{
-"name": "自定义下载·img.alicdn.com",
-"url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
-},
-{
-"name": "自定义下载·gw.alicdn.com#2",
-"url": "https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png"
-},
-{
-"name": "自定义下载·cloud.video.taobao.com",
-"url": "https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4"
-},
-{
-"name": "自定义下载·lf9-static.bytednsdoc.com",
-"url": "https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4"
-}
-]
-},
-{
-"name": "自定义·上传地址",
-"type": "upload",
-"items": [
-{
-"name": "自定义上传·www.wenshushu.cn",
-"url": "https://www.wenshushu.cn/"
-},
-{
-"name": "自定义上传·cowtransfer.com",
-"url": "https://cowtransfer.com/"
-},
-{
-"name": "自定义上传·www.file.io",
-"url": "https://www.file.io/"
-},
-{
-"name": "自定义上传·yun.139.com",
-"url": "https://yun.139.com/"
-},
-{
-"name": "自定义上传·cloud.189.cn",
-"url": "https://cloud.189.cn/"
-},
-{
-"name": "自定义上传·pan.wo.cn",
-"url": "https://pan.wo.cn/"
 }
 ]
 }
@@ -1966,4 +1664,3 @@ const DEFAULT_GROUPS = [
 </script>
 </body>
 </html>
-<!-- （注：内容由AI生成） -->
