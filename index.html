@@ -1,1666 +1,636 @@
 <!DOCTYPE html>
-<html lang="zh" data-theme="light">
+<html lang="zh">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>流量消耗器</title>
-<meta name="keywords" content="IP查询,IP归属查询,在线测速,网速测试,多地IP查询,流量消耗器">
-<meta name="description" content="测试您的网速，多地查询您的IP地址，同时具备网络延迟实时检测、地址批量检测、伪熄屏">
-<script src="https://fastly.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-<style>
-:root{
-  --bg:#f4f6fb; --card:#ffffff; --card2:#f8f9fd; --text:#1f2937; --muted:#6b7280;
-  --border:#e5e7eb; --primary:#536fc4; --primary-weak:#eef1fb; --info:#0ea5e9;
-  --ok:#16a34a; --warn:#f59e0b; --bad:#dc2626; --shadow:0 2px 10px rgba(31,41,55,.06);
-  --hover:#f3f5fb;
-}
-[data-theme="dark"]{
-  --bg:#0e1014; --card:#171a21; --card2:#1d212b; --text:#e5e7eb; --muted:#9aa3b2;
-  --border:#282e3b; --primary:#7d96e6; --primary-weak:#222a3d; --info:#38bdf8;
-  --ok:#4ade80; --warn:#fbbf24; --bad:#f87171; --shadow:0 2px 12px rgba(0,0,0,.35);
-  --hover:#222734;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.5}
-a{color:var(--primary);text-decoration:none}
-/* header */
-.header{position:sticky;top:0;z-index:100;background:var(--card);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
-.header-inner{max-width:880px;margin:0 auto;padding:0 14px;height:56px;display:flex;align-items:center;gap:12px}
-.brand{display:flex;align-items:center;gap:9px;user-select:none;-webkit-user-select:none;cursor:pointer;flex:1;min-width:0;padding:6px 2px;border-radius:10px}
-.brand:active{background:var(--primary-weak)}
-.brand-logo{width:30px;height:30px;flex:none;border-radius:8px;background:linear-gradient(135deg,#536fc4,#7d96e6);display:flex;align-items:center;justify-content:center;color:#fff}
-.brand-title{font-size:17px;font-weight:700;white-space:nowrap}
-.brand-ver{font-size:11px;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:1px 7px;white-space:nowrap}
-.icon-btn{width:38px;height:38px;border:none;border-radius:10px;background:transparent;color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;flex:none}
-.icon-btn:hover{background:var(--hover)}
-/* layout */
-.wrap{max-width:880px;margin:0 auto;padding:14px 14px 40px}
-.card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
-.card-inner{padding:16px}
-.card-title{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:12px}
-.card-title .ico{color:var(--primary)}
-.note{display:flex;align-items:flex-start;gap:8px;padding:5px 0;color:var(--muted);font-size:13px}
-.dot{width:9px;height:9px;border-radius:3px;flex:none;margin-top:6px}
-/* forms */
-.form-group{margin-bottom:14px}
-.form-label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-.form-control{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);color:var(--text);font-size:14px;outline:none}
-.form-control:focus{border-color:var(--primary)}
-select.form-control{appearance:none}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:14px;cursor:pointer;transition:.15s}
-.btn:hover{background:var(--hover)}
-.btn-block{width:100%;padding:12px;font-size:15px;font-weight:600}
-.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
-.btn-primary:hover{opacity:.92}
-.btn-danger{background:var(--bad);border-color:var(--bad);color:#fff}
-.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.current-box{display:flex;gap:8px;align-items:center}
-.current-box .form-control{flex:1;min-width:0}
-.current-chip{padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--card2);font-size:13px;display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
-.current-chip b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.current-chip span{color:var(--muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.spinner{display:flex;align-items:center;gap:0}
-.spinner .form-control{border-radius:0;text-align:center;border-left:none;border-right:none;width:80px}
-.spinner .btn{border-radius:10px 0 0 10px}
-.spinner .btn:last-child{border-radius:0 10px 10px 0}
-.switch{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
-.switch input{display:none}
-.switch .track{width:44px;height:24px;border-radius:20px;background:var(--border);position:relative;transition:.2s;flex:none}
-.switch .track::after{content:"";position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:.2s}
-.switch input:checked + .track{background:var(--primary)}
-.switch input:checked + .track::after{transform:translateX(20px)}
-/* stats */
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
-.stat{border:1px solid var(--border);border-radius:12px;padding:12px;cursor:pointer;background:var(--card2)}
-.stat .stat-title{font-size:12px;color:var(--muted)}
-.stat .stat-value{font-size:20px;font-weight:700;margin-top:2px;white-space:nowrap}
-.stat.plain{cursor:default}
-.text-info{color:var(--info)}
-.status-line{margin-top:10px;font-size:12px;color:var(--muted);min-height:18px;word-break:break-all}
-.status-line .bad{color:var(--bad)}
-.status-line .ok{color:var(--ok)}
-.chart{height:300px;width:100%}
-.iprow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--border)}
-.iprow:last-child{border-bottom:none}
-.iprow .v{text-align:right;color:var(--muted);word-break:break-all}
-.iprow .v.warn{color:var(--warn)}
-.footer-tip{text-align:center;color:var(--muted);font-size:12px;padding:6px 0 0}
-/* ===== config modal ===== */
-.modal-mask{position:fixed;inset:0;background:var(--bg);z-index:500;display:none;flex-direction:column}
-.modal-mask.open{display:flex}
-.modal-head{background:var(--card);border-bottom:1px solid var(--border);padding:10px 12px;display:flex;align-items:center;gap:8px;flex:none}
-.modal-head .m-title{font-weight:700;font-size:16px}
-.modal-head .m-sub{color:var(--muted);font-size:12px}
-.search-row{display:flex;gap:8px;padding:10px 12px;background:var(--card);border-bottom:1px solid var(--border);flex:none;flex-wrap:wrap}
-.search-row .form-control{flex:1;min-width:160px}
-.detect-bar{display:flex;gap:8px;align-items:center;padding:8px 12px;background:var(--card2);border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);flex:none;flex-wrap:wrap}
-.progress{flex:1;min-width:120px;height:8px;background:var(--border);border-radius:6px;overflow:hidden}
-.progress i{display:block;height:100%;width:0;background:var(--primary);transition:width .2s}
-.modal-body{flex:1;overflow-y:auto;padding:12px}
-.g-group{margin-bottom:14px}
-.g-head{display:flex;align-items:center;gap:8px;position:sticky;top:0;background:var(--bg);padding:6px 2px;z-index:2;cursor:pointer;font-weight:700}
-.g-head .g-count{font-weight:400;font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:0 8px}
-.g-head .arrow{transition:.2s;color:var(--muted)}
-.g-group.collapsed .arrow{transform:rotate(-90deg)}
-.g-body{display:flex;flex-direction:column;gap:6px}
-.g-group.collapsed .g-body{display:none}
-.g-item{display:flex;align-items:center;gap:8px;padding:9px 10px;background:var(--card);border:1px solid var(--border);border-radius:10px}
-.g-item.active{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary) inset}
-.g-main{flex:1;min-width:0}
-.g-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
-.g-url{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tag{font-size:10px;padding:0 6px;border-radius:10px;border:1px solid var(--border);color:var(--muted);flex:none}
-.tag.up{color:#b45309;border-color:#f59e0b;background:rgba(245,158,11,.1)}
-.g-result{font-size:11px;min-width:148px;text-align:right;white-space:nowrap;flex:none}
-.g-result .r-ok{color:var(--ok)} .g-result .r-bad{color:var(--bad)} .g-result .r-warn{color:var(--warn)} .g-result .r-run{color:var(--info)}
-.g-actions{display:flex;gap:4px;flex:none}
-.icon-x{width:30px;height:30px;padding:0;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px}
-.icon-x:hover{background:var(--hover)}
-.icon-x.del{color:var(--bad)}
-.empty{text-align:center;color:var(--muted);padding:40px 0}
-/* add form */
-.add-row{display:none;gap:8px;padding:10px 12px;background:var(--card2);border-bottom:1px solid var(--border);flex:none;flex-wrap:wrap}
-.add-row.open{display:flex}
-.add-row .form-control{flex:1;min-width:140px}
-/* screen off */
-.screen-off{position:fixed;inset:0;background:#000;z-index:999999;display:none;align-items:flex-start;justify-content:center}
-.screen-off.open{display:flex}
-.screen-off .hint{color:#222;margin-top:34vh;font-size:14px;letter-spacing:2px;transition:opacity .6s;user-select:none}
-.screen-off .clock{position:fixed;bottom:26px;left:0;right:0;text-align:center;color:#111;font-size:12px}
-@media (max-width:640px){
-  .stats{grid-template-columns:repeat(2,1fr)}
-  .stat .stat-value{font-size:18px}
-  .g-result{min-width:0;flex-basis:100%;text-align:left;padding-left:2px}
-  .g-item{flex-wrap:wrap}
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流量测试工具</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 20px;
+            color: #fff;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        select,
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        select:focus,
+        input[type="text"]:focus {
+            border-color: #667eea;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: #fff;
+        }
+
+        .result {
+            margin-top: 25px;
+            display: none;
+        }
+
+        .result.active {
+            display: block;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .result-item {
+            background: #f8f9ff;
+            padding: 18px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-top: 5px;
+        }
+
+        .result-item .label {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .log-box {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 15px;
+            border-radius: 8px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+
+        .log-box div {
+            margin-bottom: 4px;
+            line-height: 1.5;
+        }
+
+        .log-box .ok {
+            color: #a6e3a1;
+        }
+
+        .log-box .err {
+            color: #f38ba8;
+        }
+
+        .log-box .info {
+            color: #89b4fa;
+        }
+
+        option[disabled] {
+            background: #f1f3fb;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="header">
-  <div class="header-inner">
-    <div class="brand" id="brand" title="长按进入伪熄屏">
-      <span class="brand-logo">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
-      </span>
-      <span class="brand-title">流量消耗器</span>
-      <span class="brand-ver" id="brandVer">v2.0</span>
+    <div class="container">
+        <div class="header">
+            <h1>流量测试工具</h1>
+            <p>选择测试地址或自定义 URL，开始批量下载测试流量与连接稳定性</p>
+        </div>
+
+        <div class="card">
+            <div class="form-group">
+                <label for="select">测试地址</label>
+                <select id="select">
+                    <option value="">请选择测试地址</option>
+
+                    <option disabled>━━ 常用推荐 ━━</option>
+                    <option value="https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk">百度CDN [高速]</option>
+                    <option value="https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png">阿里CDN</option>
+                    <option value="https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png">腾讯CDN</option>
+                    <option value="https://lf9-cdn-tos.bytecdntp.com/cdn/yuntu-index/1.0.4/case/maiteng/detailbg.png">字节跳动</option>
+                    <option value="https://pic-bucket.ws.126.net/photo/0003/2022-04-24/H5N2082C00AJ0003NOS.jpg">网易</option>
+                    <option value="https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4">Vivo</option>
+                    <option value="https://img.cmvideo.cn/publish/noms/2022/10/14/1O3VIGPVP6HTS.jpg">咪咕视频</option>
+                    <option value="https://img.mcloud.139.com/material_prod/material_media/20221128/1669626861087.png">和彩云</option>
+                    <option value="https://desk.ctyun.cn/desktop/software/clientsoftware/download/ff3e71dcc21152307f54700c62e5aef6">天翼云</option>
+                    <option value="https://i2.hdslb.com/bfs/openplatform/202506/ndIMphTF1750406775833.png">哔哩哔哩</option>
+                    <option value="https://cachefly.cachefly.net/100mb.test">Cachefly Test [Global]</option>
+                    <option value="https://speed.cloudflare.com/__down?bytes=1073741824">Cloudflare Speed [Global]</option>
+                    <option value="https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4">lf5-j1gamecdn-cn.dailygn.com</option>
+                    <option value="https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe">issuepcdn.baidupcs.com</option>
+                    <option value="https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk">wppkg.baidupcs.com</option>
+                    <option value="https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg">static-d.iqiyi.com</option>
+                    <option value="https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg">gw.alicdn.com#1</option>
+                    <option value="https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png">img.alicdn.com</option>
+                    <option value="https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png">gw.alicdn.com#2</option>
+                    <option value="https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4">cloud.video.taobao.com</option>
+                    <option value="https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4">lf9-static.bytednsdoc.com</option>
+
+                    <option disabled>━━ 中国移动云盘 ━━</option>
+                    <option value="https://yun.mcloud.139.com/mCloudPc/v832/mCloud_Setup-001.exe">中国移动云盘-静态资源1[定向]</option>
+                    <option value="https://img.mcloud.139.com/material_prod/material_media/20221128/1669626861087.png">中国移动云盘-图片资源(中国移动)</option>
+
+                    <option disabled>━━ 移动云手机 ━━</option>
+                    <option value="https://cp.139.com/_nuxt/img/member-img.c9e62ac.png">移动云手机-图片资源1[定向]</option>
+                    <option value="https://cloudphoneh5.buy.139.com/cloudimage/dashboard/202108/1432606846652387328.png">移动云手机-图片资源2[定向]</option>
+                    <option value="https://cloud.139.com/cloudimage/dashboard/202408/1824417436380827648.png">移动云手机-图片资源3[定向]</option>
+                    <option value="https://cp.139.com/video/banner.mp4">移动云手机-静态资源1[定向]</option>
+                    <option value="https://lf3-data.volccdn.com/obj/data-static/log-sdk/collect/5.0/collect-rangers-v5.1.7.js">移动云手机-静态资源3</option>
+
+                    <option disabled>━━ 腾讯 ━━</option>
+                    <option value="https://weixinredpacket.wxqcloud.qq.com/red2022/2/14/89.jpg">微信红包-图片资源1[非定向]</option>
+                    <option value="https://mmcomm.qpic.cn/wx_redskin/8kD42ndTK262mU9603rnaaTWiafyURYcfEnu1WAs85e3iby8WtwMKCAg/">微信红包-图片资源2[定向]</option>
+                    <option value="https://res.wx.qq.com/open/js/jweixin-1.6.0.js">微信-静态资源1[定向]</option>
+                    <option value="https://res.wx.qq.com/open/zh_CN/htmledition/res/dev/download/sdk/WeChatSDK1.7.5.zip">微信-静态资源2[定向]</option>
+                    <option value="https://captcha.gtimg.com/1/tcaptcha-frame.28d99140.js">微信-静态资源3[定向]</option>
+                    <option value="https://js.aq.qq.com/js/aq_common.js">QQ安全中心-静态资源1</option>
+                    <option value="https://game.gtimg.cn/images/cf/cp/a20221219jansecond/t3_prop11.gif">腾讯游戏-静态资源1</option>
+                    <option value="https://game.gtimg.cn/images/nz/web202106/index/bc_part1.gif?0.3190485611376561">腾讯游戏-静态资源2</option>
+                    <option value="https://ossweb-img.qq.com/images/lol/web201310/skin/big10001.jpg">腾讯游戏-静态资源3[定向]</option>
+                    <option value="https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png">Wegame-图片资源1</option>
+                    <option value="https://tgphpic-70080.picnjc.qpic.cn/g.2001885-r.6702b/feeds_article_ugc_1461967d-c4c8-4f01-b11d-b5fe1ca89936/0">Wegame-图片资源2</option>
+                    <option value="https://cdn-go.cn/vasdev/web_webpersistance_v2/latest/flog.core.min.js">Wegame-静态资源1[统计不准确]</option>
+                    <option value="https://omi.cdn-go.cn/play/latest/assets/main.1840ac5c.js">Wegame-静态资源2[统计不准确]</option>
+                    <option value="https://beaconcdn.qq.com/sdk/4.3.4/beacon_web.min.js">Wegame-静态资源3[统计不准确]</option>
+                    <option value="https://iwan-s.video.qq.com/packages/game-popover/latest/bundle.js">腾讯视频-静态资源1</option>
+                    <option value="https://vm.gtimg.cn/thumbplayer/superplayer/1.35.4/superplayer.js">腾讯视频-静态资源2</option>
+                    <option value="https://staticfile.qq.com/qimei/qimeisdk-web/0.6.3/index.js">腾讯视频-静态资源3</option>
+                    <option value="https://community.image.video.qpic.cn/1234_1f0e95-5_1492899934_1726140843769309">腾讯视频-图片资源1</option>
+                    <option value="https://image.video.qpic.cn/1234_a552e-16_630898403_1622953662941360">腾讯视频-图片资源2</option>
+                    <option value="https://media-img.puui.qpic.cn/media_img/0/15204231726208958870/0">腾讯视频-图片资源3</option>
+                    <option value="https://vcover-hz-pic.puui.qpic.cn/vcover_hz_pic/0/mzc00200x210zrt1725330684307/0">腾讯视频-图片资源4</option>
+
+                    <option disabled>━━ 哔哩哔哩 ━━</option>
+                    <option value="https://upos-sz-static.bilivideo.com/ssaxcode/m201120a222dw4bejcrhrq3gt815s4zd-1-SiteTool_1080.mp4">哔哩哔哩-静态资源1[定向]</option>
+                    <option value="https://i0.hdslb.com/bfs/vc/7a9f7ddb6dcde16031b89a3ec7d7e806aa8eeba9.webm">哔哩哔哩-广告1</option>
+                    <option value="https://i0.hdslb.com/bfs/face/03525d094e0e2a142d08181532d729615c18ec92.jpg">哔哩哔哩-广告2</option>
+                    <option value="https://s1.hdslb.com/bfs/game-static/web/caster/static/script/vue/da3f37d7fd8339357ed671a94941757e/st.zip">哔哩CDN域名-阿里CDN</option>
+                    <option value="https://s3.hdslb.com/bfs/game-static/web/caster/static/script/vue/da3f37d7fd8339357ed671a94941757e/st.zip">哔哩CDN域名-阿里CDN2</option>
+                    <option value="https://static.hdslb.com/images/base/icons.png">哔哩哔哩-图片资源1[定向]</option>
+                    <option value="https://tf-i0.hdslb.com/bfs/archive/e9f69c2718ea0d3813f43b9d80ef9b364368f46b.jpg">哔哩哔哩-图片资源2</option>
+
+                    <option disabled>━━ 百度系 ━━</option>
+                    <option value="https://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduYunGuanjia_6.7.4.exe">百度网盘-静态资源1</option>
+                    <option value="https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk">百度网盘-静态资源2</option>
+                    <option value="https://nd-static.bdstatic.com/m-static/v20-main/home/js/chunk-vendors.f3d214b0.js">百度网盘-静态资源3</option>
+                    <option value="https://staticiot.cdn.bcebos.com/union/badjs-sdk-min-2.0.0.js">百度网盘-静态资源4</option>
+                    <option value="https://code.bdstatic.com/npm/spy-client@2.0.3/dist/spy-client-basic.min.js">百度网盘-静态资源5</option>
+                    <option value="https://staticsns.cdn.bcebos.com/amis/2023-11/1701055508610/light-hello.png">百度网盘-图片资源1</option>
+                    <option value="https://dlswbr.baidu.com/heicha/mm/2027/acs-2027.js">百度贴吧-静态资源1</option>
+                    <option value="https://efe-h2.cdn.bcebos.com/cliresource/@baidu/ubc-report-sdk/3.3.3/ubc-report-sdk.iife.polyfill.min.js">百度贴吧-静态资源2</option>
+                    <option value="https://dmpstatic.cdn.bcebos.com/weirwood-sdk/1/1.3.7/bundle.min.js">百度贴吧-静态资源3</option>
+                    <option value="https://tb5.bdstatic.com/api/wza/aria.js">百度贴吧-静态资源3#2</option>
+                    <option value="https://tieba-ares.cdn.bcebos.com/mis/2022-5/1653034037345/186363ee83e9.png">百度贴吧-图片资源1</option>
+                    <option value="https://imgsa.baidu.com/forum/pic/item/1e41a7014a90f603a3e0dea13412b31bb251edcc.jpg">百度贴吧-图片资源2</option>
+                    <option value="https://jmy-video.baidu.com/7b828dab3003f3841f3a026b437cf879_1280_720.mp4">百度视频-静态资源1</option>
+                    <option value="https://hk.bdstatic.com/_next/static/chunks/1232.ab8e3fcb5239645f.js">百度视频-静态资源2</option>
+                    <option value="https://avatar.bdstatic.com/it/u=3525109608,2713994146&fm=3012">百度视频-图片资源1</option>
+                    <option value="https://pic.rmb.bdstatic.com/baidu-rmb-video-cover-1/2024-1/1705996556941/724684ad74c9.png">百度视频-图片资源2</option>
+                    <option value="https://fenwan.cdn.bcebos.com/webgame/static/webgame/js/index.aea21658.js">百度页游-静态资源1</option>
+                    <option value="https://edu-wenku.bdimg.com/v1/na/0807/PC%E5%AE%A2%E6%88%B7%E7%AB%AF%E7%89%88%E6%9C%AC%E5%8C%85/%E7%99%BE%E5%BA%A6%E6%96%87%E5%BA%93%20Setup%201.2.7.exe">百度文库-静态资源1</option>
+                    <option value="https://wkstatic.bdimg.com/static/ndpcwenku/static/pcCoreClient/js/views/1b65f79a0217ad721cce.js">百度文库-静态资源2</option>
+                    <option value="https://imeres.baidu.com/imeres/ime-res/guanwang/img/Ubuntu_Deepin-fcitx-baidupinyin-64.zip">百度输入法</option>
+
+                    <option disabled>━━ 爱奇艺 ━━</option>
+                    <option value="https://stc.iqiyipic.com/gaze/fingerprint/1.0.58/fingerprint.umd.min.js">爱奇艺-静态资源1</option>
+                    <option value="https://static.iqiyi.com/js/player_v3/pcweb.wonder.12.92.online.js">爱奇艺-静态资源2</option>
+                    <option value="https://static-s.iqiyi.com/qysdk/payment/static/js/main.js">爱奇艺-静态资源3</option>
+                    <option value="https://www.iqiyi.com/static/2024913091751/css/main.css">爱奇艺-静态资源4</option>
+                    <option value="https://security.iqiyi.com/static/cook/v1/cooksdk.js">爱奇艺-静态资源5</option>
+                    <option value="https://pic9.iqiyipic.com/image/20240912/01/ec/v_176977887_m_601_m7_440_608.webp">爱奇艺-图片资源1</option>
+                    <option value="https://pic0.iqiyipic.com/marketing/20200116/911b3739e5654f8c9e89e3a8fd51d74c.jpg">爱奇艺-图片资源2</option>
+                    <option value="https://img7.iqiyipic.com/passport/20180804/fe/12/passport_2352240096_153335810673051_1080_1080.jpg">爱奇艺-图片资源3</option>
+                    <option value="https://www.iqiyi.com/common/fix/headicons/female04-130.png">爱奇艺-图片资源4</option>
+                    <option value="https://static.g.iqiyi.com/qiplay2/e1339c7c-1cfc-458a-b165-62ec14e59f19.png">爱奇艺-图片资源5</option>
+
+                    <option disabled>━━ 阿里系 ━━</option>
+                    <option value="https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png">阿里云-图片资源1</option>
+                    <option value="https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg">阿里云-图片资源2</option>
+                    <option value="https://g.alicdn.com/AWSC/fireyejs/1.228.23/fireyejs.js">阿里云-静态资源1</option>
+                    <option value="https://o.alicdn.com/tbhome/tbnav/index.js">淘宝-静态资源2</option>
+                    <option value="https://at.alicdn.com/t/a/font_403341_6q1chd11nes.woff2">淘宝-静态资源3</option>
+                    <option value="https://mdn.alipayobjects.com/ind_developertool/afts/file/A*fSAmSbgxLosAAAAAAAAAAAAADlx-AQ?af_fileName=AlipayKeyTool-2.0.3.dmg">支付宝-静态资源1</option>
+                    <option value="https://gw.alipayobjects.com/render/p/yuyan/180020010001210191/umi.9f3e4149.js">支付宝-静态资源2</option>
+                    <option value="https://ur.alipay.com/tracert_a1911.js">支付宝-静态资源3</option>
+
+                    <option disabled>━━ 中国联通 ━━</option>
+                    <option value="https://m1.ad.10010.com/small_video/uploadImg/1669798519261.png">联通官网-图片资源1(中国联通)</option>
+                    <option value="https://www.10010.com/wt_service_web/copyright/images/jifenshangcheng.png">联通官网-图片资源2(中国联通)</option>
+                    <option value="https://iservice.10010.com/wt_manage/uploadImg/1730297793913.png">联通官网-图片资源3(中国联通)</option>
+                    <option value="https://www.10010.com/wt_service_web/js/header.js">联通官网-静态资源1(中国联通)</option>
+                    <option value="https://www.cucloud.cn/templets/default/common/fontStyle/SourceHanSansCN-Light.otf">联通云-静态资源2(中国联通)</option>
+
+                    <option disabled>━━ 中国电信 ━━</option>
+                    <option value="https://bigdata-behaviordata.189.cn:9002/chinatelecom/chinatelecom.min.js">电信官网-静态资源1(中国电信)</option>
+                    <option value="https://livepull.189.cn/live/youhui-1728184851.ts">电信官网-静态资源2(中国电信)</option>
+                    <option value="https://vod-origin-rjzy.gdoss.xstore.ctyun.cn/f9ea5388dc0447aa88a5b92f07f1a8f7.mp4">天翼云(中国电信)</option>
+                    <option value="https://cloudmeeting.189.cn/static/js/chunk-vendors.624b9116.js">天翼云会议-静态资源1(中国电信)</option>
+                    <option value="https://static.e.189.cn/open/login/page/web/v5.0/static/js/captch.min.js?v1.1">天翼云盘-静态资源1(中国电信)</option>
+                    <option value="https://api.cloud.189.cn/guns/img/recommendedPosition/20240710094316_0710web.jpg">天翼云盘-图片资源1(中国电信)</option>
+
+                    <option disabled>━━ 优酷 ━━</option>
+                    <option value="https://m.ykimg.com/0584000066BEC16C13EB661302C6D644">优酷-图片资源1</option>
+                    <option value="https://liangcang-material.alicdn.com/prod/upload/b4cef471dbfb452fbff8a61102a8ca9a.webp.gif">优酷-图片资源2</option>
+                    <option value="https://static.youku.com/user/avatar/1350/23.png">优酷-图片资源3</option>
+
+                    <option disabled>━━ 华为 ━━</option>
+                    <option value="https://consumer.huawei.com/content/dam/huawei-cbg-site/cn/mkt/huawei-cloud-service/appgallery/application-boutique-pc1.jpg">华为官网-图片资源1</option>
+                    <option value="https://res.hc-cdn.com/cnpm-baseui/2.8.11/fonts/HuaweiSans-Bold.ttf">华为云-静态资源1</option>
+                    <option value="https://res-static.hc-cdn.cn/cloudbu-site/china/zh-cn/HWCdeveloper/shemei/bilibili-qc.jpg">华为云-图片资源1</option>
+                    <option value="https://portal.hc-cdn.com/cnpm-baseui/2.8.11/index.css">华为云-静态资源2</option>
+
+                    <option disabled>━━ 小米 ━━</option>
+                    <option value="https://cnbj0.fds.api.xiaomi.com/miio.files/commonfile_zip_a348bd8c21030ba605d47331d4eb4663.zip">小米应用商店</option>
+                    <option value="https://dev.mi.com/console/css/main.css">小米开放平台-静态资源1</option>
+                    <option value="https://cdn.cnbj1.fds.api.mi-img.com/appstore-developer-web-fe/production/static/js/14.45dbc296.chunk.js">小米开放平台-静态资源2</option>
+                    <option value="https://cdn.web-global.fds.api.mi-img.com/mcfe--mi-account/static/static/media/banner.92c693b4..jpg">小米开放平台-静态资源3</option>
+                    <option value="https://mcfe--account-static-legacy.cnbj1.mi-fds.com/mcfe--account-static-legacy/static/prod/captcha-static/v2/js/v.js">小米开放平台-静态资源4</option>
+                    <option value="https://static-verify.sec.xiaomi.com/v2/js/v.js">小米开放平台-静态资源5</option>
+
+                    <option disabled>━━ 京东 ━━</option>
+                    <option value="https://wq.360buyimg.com/jdm-home-page/pages/js/index.aeba0df4.js">京东商城-静态资源1</option>
+                    <option value="https://storage.360buyimg.com/babelnode/jd-jssdk/4.2.1/jd-jssdk.js">京东商城-静态资源2</option>
+                    <option value="https://wl.jd.com/unify.min.js">京东商城-静态资源3</option>
+                    <option value="https://storage.jd.com/jdmobile/JDMALL-PC2.apk">京东商城-静态资源4</option>
+                    <option value="https://m.360buyimg.com/seckillcms/jfs/t1/155683/19/46720/143938/66de6069Fcbca5419/a04efd5dd680737d.png">京东商城-图片资源1</option>
+                    <option value="https://img10.360buyimg.com/live/jfs/t1/128947/12/26918/1361527/6260e71bE0ee85af5/ecaa17ea8dd3dddb.jpg">京东商城-图片资源2</option>
+
+                    <option disabled>━━ 拼多多 ━━</option>
+                    <option value="https://static.pddpic.com/assets/js/react_pdd_50c6d8bdb252d256ae20_1026.js">拼多多-静态资源1</option>
+                    <option value="https://mcdn.pinduoduo.com/home/js/index.494d9edf.js">拼多多-静态资源2</option>
+                    <option value="https://lpcdn.pinduoduo.com/_next/static/chunks/74769-4e08eb3c27153a5f.js">拼多多-静态资源3</option>
+                    <option value="https://dl.pddpic.com/android_dev/2021-02-08/4ff25ce6148aa99aeeba723b5891ae72.apk">拼多多-静态资源4</option>
+                    <option value="https://cd.pddpic.com/android_dev/2023-07-28/5c04772968aee57ca690fbe1e7f29467.apk">拼多多-静态资源5</option>
+                    <option value="https://funimg.pddpic.com/common/recruit/43c56034-ce04-49fc-9227-0d24a8e82849.png">拼多多-图片资源1</option>
+                    <option value="https://img.pddpic.com/gaudit-image/2024-06-01/3c2541af53af076d0b78c67fd51db13d.jpeg">拼多多-图片资源2</option>
+                    <option value="https://cdn.pinduoduo.com/upload/official_website/6b1f700d-70c7-4f9f-890c-eb9f9ae68425.png">拼多多-图片资源3</option>
+                    <option value="https://commimg.pddpic.com/add-crystal-outer/2023-04-11/70a3dea1-53d4-4da6-9397-d4bf2a884911.gif.slim.gif">拼多多-图片资源4</option>
+                    <option value="https://t00img.yangkeduo.com/chat/images/2022-12-12/79e0a4684de85c7b59f797819260be98.jpeg">拼多多-图片资源5</option>
+
+                    <option disabled>━━ 网易 ━━</option>
+                    <option value="https://n.v.netease.com/2018/1017/ba32725ee3a20ee1fbe874a45d1f7fa9qt.mp4">逆水寒官网静态资源</option>
+                    <option value="https://nsh.gdl.netease.com/NGP/NGP_NSH_2.0.81143.exe">逆水寒客户端</option>
+                    <option value="https://nsh.gdl.netease.com/cloudgame_macos/NSH_cloud_game_for_mac_1.4.6_2023_06-02-11.dmg">网易云游戏</option>
+                    <option value="https://x19.gdl.netease.com/MCLauncherTool_0.1.4.50447.exe">MCLauncher工具(阿里CDN)</option>
+                    <option value="https://mov.bn.netease.com/movieMP4/2011/3/U/1/S6V22L0U1.mp4">网易公开课(白云山CDN)</option>
+
+                    <option disabled>━━ 咪咕系列 ━━</option>
+                    <option value="https://wsdkdl.migu.cn/common/mgmusic/migu_https.js">咪咕音乐-静态资源1</option>
+                    <option value="https://webpay.migu.cn:8443/migunetsdk/webJs/frame.html?netId=b486900f41fc411187240dcb45fdbc8d&client=WWW&umark=Common2&protocol=https&mv=3.0.1&t=1704113156924">咪咕音乐-静态资源2[统计不准确]</option>
+                    <option value="https://img.cmvideo.cn/publish/noms/2022/10/14/1O3VIGPVP6HTS.jpg">咪咕视频-图片资源1</option>
+                    <option value="https://wapx.cmvideo.cn/publish/poms/image/1752/094/251/202311151425_477841_HSJ1080H.jpg">咪咕视频-图片资源2</option>
+                    <option value="https://wcache.migu.cn/prod/upload/game_resource/contentRelated/006212638000/84/1662605671282.jpg">咪咕快游-图片资源1(中国移动)[非定向]</option>
+                    <option value="https://static.migucloud.com/article/462/20191213/4f23d49723e5a46938718a3f4587734f.png">咪咕快游-图片资源2(中国移动)[非定向]</option>
+                    <option value="https://scache.cmam.migu.cn/nuwa/culture/202309/20230905/model/m9100013009198/f1164326392847015936.png?timestamp=2332214977783&sid=2445210582&encrypt=936ee89150a3158eb577614473f425e5">咪咕快游-图片资源3(中国移动)[非定向]</option>
+                    <option value="https://freeserver.migufun.com/resource/beta/picture/system/20211003/20211003124601120_28.jpg">咪咕快游-图片资源4(中国移动)[非定向]</option>
+                    <option value="https://gcache.migu.cn/prod/upload/game_resource/channel_for_homepage_game2/202408/2909/59/20240829095855985_mgwebp1.jpg">咪咕快游-图片资源5(中国移动)</option>
+                    <option value="https://h5cdn.migufun.com/middleh5/_nuxt/9d04212.js">咪咕快游-静态资源1(中国移动)[非定向]</option>
+                    <option value="https://img1.shop.10086.cn/goods/ts27zarfe8d5jgvs_940x7200">中国移动商城-图片资源1</option>
+                    <option value="https://res.app.coc.10086.cn/group1/M00/03/0D/CtFOBmTxRyaAYjdGAAAhPGgdCJw206.png">中国移动业务-图片资源2</option>
+
+                    <option disabled>━━ 移动云 ━━</option>
+                    <option value="https://ecloud.eos-guangzhou-1.cmecloud.cn/op-login-static/3.6.0/js/vendor.6a12e122d36e1092fd0e.js">移动云-静态资源2</option>
+                    <option value="https://picx.zhimg.com/v2-af7215f2d8266fec068e049b7559cd19.gif">知乎-图片资源</option>
+                    <option value="https://static.zhihu.com/parker/campaign/vendors.5b2b99d85429920d2342.js">知乎-静态资源</option>
+                    <option value="https://dsfs.oppo.com/oppo/shop-pc-v2/main/js/9fb472f.js">OPPO商城静态资源</option>
+                    <option value="https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4">VIVO官网静态资源</option>
+                    <option value="https://imgwsdl.vivo.com.cn/appstore/developer/soft/20210125/202101251051528awqa.apk">VIVO应用商店</option>
+                    <option value="https://activity.hdslb.com/blackboard/static/20210604/4d40bc4f98f94fbc71c235832ce3efd4/hJEhL6jGOY.zip">上海灵羊1</option>
+                    <option value="https://photocdn.tv.sohu.com/img/20230419/pic_org_88f470db-176e-40c5-a514-a31993dabb27.jpg">搜狐视频</option>
+                    <option value="https://p8.itc.cn/c_fit,w_1800,h_1200,q_100/images01/20230723/e23a27186e404472ab1f659a1ae18cae.jpeg">搜狐图片</option>
+                    <option value="https://i.apps.sina.cn/tqt/zip/com.sina.tianqitong_6.1892_2019.07.29.17.54.18.apk">新浪</option>
+                    <option value="https://sta-op.douyucdn.cn/dyadmin-ext/pkg/pc/DY_OBS_Studio_Ext/20221208103446325/DYOBSStudioExtension_1.0.2.3.exe">斗鱼CDN</option>
+                    <option value="https://shark2.douyucdn.cn/front-publish/live-master/lib/vendor-room_4e3a873.js">斗鱼CDN-小文件</option>
+                    <option value="https://devtools.qiniu.com/linux/amd64/qrsctl">七牛云</option>
+                    <option value="https://image.uc.cn/s/uae/g/2i/uninstallpg/Quark%20Browser.apk">Quark_Browser(uc)</option>
+
+                    <option disabled>━━ Github ━━</option>
+                    <option value="https://github.githubassets.com/assets/optimizely-f41bb566674d.js">Github-静态资源1</option>
+                    <option value="https://github.githubassets.com/assets/cat-7c075cc3dda1.glb">Github-静态资源2</option>
+                    <option value="https://github.githubassets.com/images/mona-whisper.gif">Github-图片资源1</option>
+                    <option value="https://github.githubassets.com/assets/head_sss-adeeeaf1228e.jpg">Github-图片资源2</option>
+
+                    <option disabled>━━ Apple ━━</option>
+                    <option value="https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js">apple-静态资源1</option>
+                    <option value="https://js-cdn.music.apple.com/musickit/v2/amp/musickit.js">apple-静态资源2</option>
+                    <option value="https://js-cdn.music.apple.com/hls.js/2.610.3/hls.js/hls.js">apple-静态资源3</option>
+                    <option value="https://apptrailers.itunes.apple.com/itunes-assets/PurpleVideo221/v4/e5/b8/e1/e5b8e119-58bf-0a47-45d3-28519a8bfdf4/P850599853_Anull_video_gr290_sdr_886x1920-.mp4">apple-静态资源4</option>
+                    <option value="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/60/60/23/606023fb-33d6-79e8-bcfe-7793257abd65/3_iOS_6.7.jpg/230x0w.webp">apple-图片资源1</option>
+
+                    <option disabled>━━ Google ━━</option>
+                    <option value="https://fonts.gstatic.com/s/roboto/v47/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2">Google-静态资源1</option>
+                    <option value="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=YouTube+Sans:wght@300..900&display=swap">Google-静态资源2</option>
+
+                    <option disabled>━━ Cloudflare ━━</option>
+                    <option value="https://challenges.cloudflare.com/turnstile/v0/g/ec4b873d446c/api.js">Cloudflare-静态资源1</option>
+
+                    <option disabled>━━ 国际节点 ━━</option>
+                    <option value="https://sgp-ping.vultr.com/vultr.com.1000MB.bin">Vultr 1G(新加坡)</option>
+                    <option value="https://nj-us-ping.vultr.com/vultr.com.1000MB.bin">Vultr 1G(纽约)</option>
+                    <option value="https://hnd-jp-ping.vultr.com/vultr.com.100MB.bin">Vultr 1G(日本)</option>
+                    <option value="https://fra-de-ping.vultr.com/vultr.com.100MB.bin">Vultr 1G(德国)</option>
+                    <option value="https://lax-ca-us-ping.vultr.com/vultr.com.100MB.bin">Vultr 1G(美国洛杉矶)</option>
+                    <option value="https://nj-us-ping.vultr.com/vultr.com.100MB.bin">Vultr 1G(美国2)</option>
+
+                    <option disabled>━━ 广告资源 ━━</option>
+                    <option value="https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA2NjE0ZWI3MDoxMDY2MjcyNzk1MzU0Nw==.jpg">书旗小说-图片广告01</option>
+                    <option value="https://sf3-fe-tos.pglstatp-toutiao.com/obj/ad-pattern/static/images/1700635544820_splashbackfor5.jpg">书旗小说-图片广告02</option>
+                    <option value="https://img.meituan.net/content/f56fe3456d25d951cdd32efa56d608a290831.jpg">书旗小说-图片广告03</option>
+                    <option value="https://p0.meituan.net/content/367fc11bb0ef629cb72988bfc5c9a930267166.jpg">书旗小说-图片广告04</option>
+                    <option value="https://p1.meituan.net/linglong/2a7ff2c8b1928507c721c577762b8321285561.jpg">书旗小说-图片广告05</option>
+                    <option value="https://sf3-fe-tos.pglstatp-toutiao.com/obj/ad-pattern/static/images/1701689556172_swipe-up.gif">书旗小说-图片广告06</option>
+                    <option value="https://s3plus.meituan.net/v1/mss_5017c592a8a946d2a54eb62a76ba299c/nebulafile/e73d23a1d2929534c167ad61c75b8aae">书旗小说-图片广告07</option>
+                    <option value="https://pgdt.ugdtimg.com/141/20204/snscosdownload/SZ/reserved/689059e200078a5908be7c8d71f701150000008d00004eec">书旗小说-图片广告08</option>
+                    <option value="https://cdn.1rtb.com/s1000/jd.jpg">书旗小说-图片广告09</option>
+                    <option value="https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA0OWQ1OTQ3Mjo0ODkyOTI5MzA3NTQ3.jpg">书旗小说-图片广告10</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="link">自定义地址</label>
+                <input type="text" id="link" placeholder="也可以直接输入完整 URL">
+            </div>
+
+            <div class="btn-group">
+                <button class="btn-start" id="btnStart">开始测试</button>
+                <button class="btn-stop" id="btnStop">停止测试</button>
+            </div>
+
+            <div class="result" id="result">
+                <div class="result-grid">
+                    <div class="result-item">
+                        <div class="label">已下载</div>
+                        <div class="value" id="totalSize">0 B</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">当前速度</div>
+                        <div class="value" id="speed">0 B/s</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">请求次数</div>
+                        <div class="value" id="requestCount">0</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="label">运行时长</div>
+                        <div class="value" id="duration">0 s</div>
+                    </div>
+                </div>
+
+                <div class="log-box" id="logBox"></div>
+            </div>
+        </div>
     </div>
-    <button class="icon-btn" id="openConfig" title="地址配置 / 检测">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-    </button>
-    <button class="icon-btn" id="themeBtn" title="切换主题">
-      <svg id="icoMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-      <svg id="icoSun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-    </button>
-  </div>
-</div>
 
-<div class="wrap">
-  <div class="card">
-    <div class="card-inner">
-      <div class="card-title"><span class="ico">ℹ️</span>工具说明</div>
-      <div class="note"><span class="dot" style="background:#9cabff"></span>支持自定义地址，浏览器安全机制下无法读取跨域链接（跨域地址会给出提示，可在配置页检测）</div>
-      <div class="note"><span class="dot" style="background:#ffa9ce"></span>速度不满意？请尝试手动切换节点，或加大运行线程（1–32）</div>
-      <div class="note"><span class="dot" style="background:#f98c45"></span>消耗机场流量，建议使用海外节点；多线程流式下载持续消耗带宽，可设置流量上限自动停止</div>
-      <div class="note"><span class="dot" style="background:#16a34a"></span>右上角齿轮可打开「地址配置」：161 条地址分组管理、搜索、增删自定义、一键检测延迟/测速</div>
-      <div class="note"><span class="dot" style="background:#6b7280"></span>长按左上角标题与版本区域进入「伪熄屏」（纯黑全屏），双击屏幕退出，下载不中断</div>
-    </div>
-  </div>
+    <script>
+        const select = document.getElementById('select');
+        const link = document.getElementById('link');
+        const btnStart = document.getElementById('btnStart');
+        const btnStop = document.getElementById('btnStop');
+        const result = document.getElementById('result');
+        const totalSizeEl = document.getElementById('totalSize');
+        const speedEl = document.getElementById('speed');
+        const requestCountEl = document.getElementById('requestCount');
+        const durationEl = document.getElementById('duration');
+        const logBox = document.getElementById('logBox');
 
-  <div class="card">
-    <div class="card-inner">
-      <div class="card-title"><span class="ico">⚙️</span>测试设置</div>
-      <div class="form-group">
-        <label class="form-label">当前测试地址</label>
-        <div class="current-box">
-          <div class="current-chip" id="currentChip">
-            <b id="curName">百度CDN [高速]</b>
-            <span id="curUrl"></span>
-          </div>
-          <button class="btn btn-primary" id="btnPick">选择地址</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">自定义 / 粘贴下载链接</label>
-        <input type="text" class="form-control" id="diyLink" placeholder="请输入下载链接，输入后自动设为当前地址" autocomplete="off">
-      </div>
-      <div class="form-group">
-        <label class="form-label">线程（1–32）</label>
-        <div class="spinner">
-          <button class="btn" id="thMinus">−</button>
-          <input type="number" class="form-control" id="thread" min="1" max="32" value="4">
-          <button class="btn" id="thPlus">+</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="switch">
-          <input type="checkbox" id="keepAlive">
-          <span class="track"></span>
-          <span>保持后台运行（移动端静音保活 + 屏幕常亮）</span>
-        </label>
-      </div>
-      <button class="btn btn-primary btn-block" id="startBtn">开始</button>
-      <div class="status-line" id="statusLine">就绪。</div>
-      <div class="stats">
-        <div class="stat" id="statTotal" title="点击设置流量上限">
-          <div class="stat-title">总流量 <span id="maxTag"></span></div>
-          <div class="stat-value" id="vTotal">-</div>
-        </div>
-        <div class="stat plain">
-          <div class="stat-title">实时速度</div>
-          <div class="stat-value text-info" id="vSpeed">-</div>
-        </div>
-        <div class="stat plain">
-          <div class="stat-title">带宽</div>
-          <div class="stat-value" id="vMbps">-</div>
-        </div>
-        <div class="stat plain">
-          <div class="stat-title">平均速度</div>
-          <div class="stat-value" id="vAvg">-</div>
-        </div>
-      </div>
-    </div>
-  </div>
+        let running = false;
+        let totalSize = 0;
+        let requestCount = 0;
+        let startTime = 0;
+        let lastSize = 0;
+        let lastTime = 0;
+        let timer = null;
+        let speedTimer = null;
+        let abortControllers = [];
 
-  <div class="card">
-    <div class="card-inner">
-      <div class="card-title"><span class="ico">📈</span>实时图表</div>
-      <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-bottom:6px">
-        <span><span style="display:inline-block;width:10px;height:10px;background:#536fc4;border-radius:2px;margin-right:4px"></span>速率 (MB/s)</span>
-        <span><span style="display:inline-block;width:10px;height:10px;background:#90ca74;border-radius:2px;margin-right:4px"></span>延迟 (ms)</span>
-      </div>
-      <div id="chart" class="chart"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-inner">
-      <div class="card-title"><span class="ico">📍</span>出口地址 / 连通性</div>
-      <div class="iprow"><span>国内 IP（ipip.net）</span><span class="v warn" id="ipcn">Loading...</span></div>
-      <div class="iprow"><span>全球 IP（ipinfo.io）</span><span class="v" id="ipgb">Loading...</span></div>
-      <div class="iprow"><span>百度连通性</span><span class="v" id="laycn">- ms</span></div>
-      <div class="iprow"><span>Cloudflare 连通性</span><span class="v" id="laygb">- ms</span></div>
-      <div class="iprow"><span>GitHub 连通性</span><span class="v" id="laygh">- ms</span></div>
-      <div class="iprow"><span>YouTube 连通性</span><span class="v" id="layyt">- ms</span></div>
-    </div>
-  </div>
-  <div class="footer-tip">长按左上角「流量消耗器 / v2.0」区域进入伪熄屏，双击退出</div>
-</div>
-
-<!-- ===== 配置 / 检测 页面 ===== -->
-<div class="modal-mask" id="configModal">
-  <div class="modal-head">
-    <button class="icon-btn" id="closeConfig"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
-    <div><div class="m-title">地址配置与检测</div><div class="m-sub" id="mSub">共 0 条</div></div>
-  </div>
-  <div class="search-row">
-    <input class="form-control" id="searchInput" placeholder="搜索名称 / 地址 / 分组（如 腾讯、cloudflare、apk）">
-    <button class="btn btn-primary" id="btnAdd"><span>＋</span> 自定义</button>
-    <button class="btn" id="btnRestore">恢复隐藏</button>
-  </div>
-  <div class="add-row" id="addRow">
-    <input class="form-control" id="addName" placeholder="名称（可选，默认取域名）" style="flex:1">
-    <input class="form-control" id="addUrl" placeholder="下载地址 https://..." style="flex:2">
-    <button class="btn btn-primary" id="btnAddOk">添加</button>
-    <button class="btn" id="btnAddCancel">取消</button>
-  </div>
-  <div class="detect-bar">
-    <button class="btn btn-sm btn-primary" id="btnDetect">🔍 检测全部</button>
-    <button class="btn btn-sm" id="btnDetectView">仅检测筛选结果</button>
-    <button class="btn btn-sm btn-danger" id="btnDetectStop" disabled>停止</button>
-    <button class="btn btn-sm" id="btnCopyResult">复制结果</button>
-    <div class="progress"><i id="detectBar"></i></div>
-    <span id="detectInfo">未开始（每个链接测首块延迟 + 8MB/8 秒采样，4 并发）</span>
-  </div>
-  <div class="modal-body" id="modalBody"></div>
-</div>
-
-<!-- ===== 伪熄屏 ===== -->
-<div class="screen-off" id="screenOff">
-  <div class="hint" id="offHint">双击屏幕退出</div>
-  <div class="clock" id="offClock"></div>
-</div>
-
-<audio id="keepAudio" loop style="display:none"></audio>
-
-<script>
-/* ================= 地址数据（161 条 = 原项目 152 + 自定义 下载 9（已并入「常用推荐」）；已按 2026-10-15 检测结果移除失败/受限链接 71 条） ================= */
-const DEFAULT_GROUPS = [
-{
-"name": "常用推荐",
-"type": "download",
-"items": [
-{
-"name": "百度CDN [高速]",
-"url": "https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk"
-},
-{
-"name": "阿里CDN",
-"url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
-},
-{
-"name": "腾讯CDN",
-"url": "https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png"
-},
-{
-"name": "Vivo",
-"url": "https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4"
-},
-{
-"name": "咪咕视频",
-"url": "https://img.cmvideo.cn/publish/noms/2022/10/14/1O3VIGPVP6HTS.jpg"
-},
-{
-"name": "天翼云",
-"url": "https://desk.ctyun.cn/desktop/software/clientsoftware/download/ff3e71dcc21152307f54700c62e5aef6"
-},
-{
-"name": "Cloudflare Speed [Global]",
-"url": "https://speed.cloudflare.com/__down?bytes=1073741824"
-},
-{
-"name": "自定义下载·lf5-j1gamecdn-cn.dailygn.com",
-"url": "https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4"
-},
-{
-"name": "自定义下载·issuepcdn.baidupcs.com",
-"url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe"
-},
-{
-"name": "自定义下载·wppkg.baidupcs.com",
-"url": "https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk"
-},
-{
-"name": "自定义下载·static-d.iqiyi.com",
-"url": "https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg"
-},
-{
-"name": "自定义下载·gw.alicdn.com#1",
-"url": "https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg"
-},
-{
-"name": "自定义下载·img.alicdn.com",
-"url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
-},
-{
-"name": "自定义下载·gw.alicdn.com#2",
-"url": "https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png"
-},
-{
-"name": "自定义下载·cloud.video.taobao.com",
-"url": "https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4"
-},
-{
-"name": "自定义下载·lf9-static.bytednsdoc.com",
-"url": "https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4"
-}
-]
-},
-{
-"name": "中国移动云盘",
-"type": "download",
-"items": [
-{
-"name": "中国移动云盘-静态资源1[定向]",
-"url": "https://yun.mcloud.139.com/mCloudPc/v832/mCloud_Setup-001.exe"
-}
-]
-},
-{
-"name": "移动云手机",
-"type": "download",
-"items": [
-{
-"name": "移动云手机-静态资源3",
-"url": "https://lf3-data.volccdn.com/obj/data-static/log-sdk/collect/5.0/collect-rangers-v5.1.7.js"
-}
-]
-},
-{
-"name": "腾讯",
-"type": "download",
-"items": [
-{
-"name": "微信红包-图片资源1[非定向]",
-"url": "https://weixinredpacket.wxqcloud.qq.com/red2022/2/14/89.jpg"
-},
-{
-"name": "微信红包-图片资源2[定向]",
-"url": "https://mmcomm.qpic.cn/wx_redskin/8kD42ndTK262mU9603rnaaTWiafyURYcfEnu1WAs85e3iby8WtwMKCAg/"
-},
-{
-"name": "微信红包-静态资源1[定向]",
-"url": "https://finder.video.qq.com/268/20303/stodownload?encfilekey=Cvvj5Ix3eewK0tHtibORqcsqchXNh0Gf3LU4CKFYQgrxxGTryibGG1vrVQ7KQm6iaOMLz6w9ZA0D3wfMrS3Fy9NlABwmibfeWwibcWPialfiaYvFzwncHxxYnvyfibFVrQia6o0iaQ&token=x5Y29zUxcibBlhUrxSefJ9VWyNicsB4SJeDjc3XtiaThF8nzov4A9wwfOE76Jahic840782ticOwbZibw&idx=1&bizid=1023&hy=SH&m=&scene=0"
-},
-{
-"name": "微信-静态资源1[定向]",
-"url": "https://res.wx.qq.com/open/js/jweixin-1.6.0.js"
-},
-{
-"name": "微信-静态资源2[定向]",
-"url": "https://res.wx.qq.com/open/zh_CN/htmledition/res/dev/download/sdk/WeChatSDK1.7.5.zip"
-},
-{
-"name": "微信-静态资源3[定向]",
-"url": "https://captcha.gtimg.com/1/tcaptcha-frame.28d99140.js"
-},
-{
-"name": "QQ安全中心-静态资源1",
-"url": "https://js.aq.qq.com/js/aq_common.js"
-},
-{
-"name": "腾讯游戏-静态资源1",
-"url": "https://game.gtimg.cn/images/cf/cp/a20221219jansecond/t3_prop11.gif"
-},
-{
-"name": "腾讯游戏-静态资源3[定向]",
-"url": "https://ossweb-img.qq.com/images/lol/web201310/skin/big10001.jpg"
-},
-{
-"name": "Wegame-图片资源1",
-"url": "https://wegame.gtimg.com/g.55555-r.c4663/wegame-home/sc02-03.514d7db8.png"
-},
-{
-"name": "Wegame-静态资源1[统计不准确]",
-"url": "https://cdn-go.cn/vasdev/web_webpersistance_v2/latest/flog.core.min.js"
-},
-{
-"name": "Wegame-静态资源2[统计不准确]",
-"url": "https://omi.cdn-go.cn/play/latest/assets/main.1840ac5c.js"
-},
-{
-"name": "腾讯-静态资源[统计不准确]",
-"url": "https://combo.b.qq.com/c/=/crm/wpa/release/3.3.8/wpa/APIs/addCustom.js,/crm/wpa/release/3.3.8/lang/extend.js,/crm/wpa/release/3.3.8/util/domain.js,/crm/wpa/release/3.3.8/wpa/WPA.js,/crm/wpa/release/3.3.8/wpa/wpaMgr.js,/crm/wpa/release/3.3.8/lang/browser.js,/crm/wpa/release/3.3.8/util/proxy.js,/crm/wpa/release/3.3.8/util/pad.js,/crm/wpa/release/3.3.8/util/Bits.js,/crm/wpa/release/3.3.8/util/getJSONP.js,/crm/wpa/release/3.3.8/util/cookie.js,/crm/wpa/release/3.3.8/util/events.js,/crm/wpa/release/3.3.8/util/onLoad.js,/crm/wpa/release/3.3.8/util/offset.js,/crm/wpa/release/3.3.8/util/Panel.js,/crm/wpa/release/3.3.8/util/onIframeLoaded.js,/crm/wpa/release/3.3.8/util/GUID.js,/crm/wpa/release/3.3.8/wpa/getQQVersion.js,/crm/wpa/release/3.3.8/wpa/ViewHelper.js,/crm/wpa/release/3.3.8/wpa/views.js?v=3.3.8.20160126"
-},
-{
-"name": "腾讯视频-静态资源1",
-"url": "https://iwan-s.video.qq.com/packages/game-popover/latest/bundle.js"
-},
-{
-"name": "腾讯视频-静态资源2",
-"url": "https://vm.gtimg.cn/thumbplayer/superplayer/1.35.4/superplayer.js"
-},
-{
-"name": "腾讯视频-静态资源3",
-"url": "https://staticfile.qq.com/qimei/qimeisdk-web/0.6.3/index.js"
-},
-{
-"name": "腾讯视频-图片资源1",
-"url": "https://community.image.video.qpic.cn/1234_1f0e95-5_1492899934_1726140843769309"
-},
-{
-"name": "腾讯视频-图片资源2",
-"url": "https://image.video.qpic.cn/1234_a552e-16_630898403_1622953662941360"
-},
-{
-"name": "腾讯视频-图片资源3",
-"url": "https://media-img.puui.qpic.cn/media_img/0/15204231726208958870/0"
-},
-{
-"name": "腾讯视频-图片资源4",
-"url": "https://vcover-hz-pic.puui.qpic.cn/vcover_hz_pic/0/mzc00200x210zrt1725330684307/0"
-}
-]
-},
-{
-"name": "哔哩哔哩",
-"type": "download",
-"items": [
-{
-"name": "哔哩哔哩-静态资源1[定向]",
-"url": "https://upos-sz-static.bilivideo.com/ssaxcode/m201120a222dw4bejcrhrq3gt815s4zd-1-SiteTool_1080.mp4"
-},
-{
-"name": "哔哩CDN域名-阿里CDN",
-"url": "https://s1.hdslb.com/bfs/game-static/web/caster/static/script/vue/da3f37d7fd8339357ed671a94941757e/st.zip"
-},
-{
-"name": "哔哩CDN域名-阿里CDN2",
-"url": "https://s3.hdslb.com/bfs/game-static/web/caster/static/script/vue/da3f37d7fd8339357ed671a94941757e/st.zip"
-},
-{
-"name": "哔哩哔哩-图片资源1[定向]",
-"url": "https://static.hdslb.com/images/base/icons.png"
-}
-]
-},
-{
-"name": "百度系",
-"type": "download",
-"items": [
-{
-"name": "百度网盘-静态资源1",
-"url": "https://issuecdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduYunGuanjia_6.7.4.exe"
-},
-{
-"name": "百度网盘-静态资源2",
-"url": "https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk"
-},
-{
-"name": "百度网盘-静态资源3",
-"url": "https://nd-static.bdstatic.com/m-static/v20-main/home/js/chunk-vendors.f3d214b0.js"
-},
-{
-"name": "百度网盘-静态资源4",
-"url": "https://staticiot.cdn.bcebos.com/union/badjs-sdk-min-2.0.0.js"
-},
-{
-"name": "百度网盘-静态资源5",
-"url": "https://code.bdstatic.com/npm/spy-client@2.0.3/dist/spy-client-basic.min.js"
-},
-{
-"name": "百度网盘-图片资源1",
-"url": "https://staticsns.cdn.bcebos.com/amis/2023-11/1701055508610/light-hello.png"
-},
-{
-"name": "百度贴吧-静态资源1",
-"url": "https://dlswbr.baidu.com/heicha/mm/2027/acs-2027.js"
-},
-{
-"name": "百度贴吧-静态资源2",
-"url": "https://efe-h2.cdn.bcebos.com/cliresource/@baidu/ubc-report-sdk/3.3.3/ubc-report-sdk.iife.polyfill.min.js"
-},
-{
-"name": "百度贴吧-静态资源3",
-"url": "https://dmpstatic.cdn.bcebos.com/weirwood-sdk/1/1.3.7/bundle.min.js"
-},
-{
-"name": "百度贴吧-静态资源3#2",
-"url": "https://tb5.bdstatic.com/api/wza/aria.js"
-},
-{
-"name": "百度贴吧-图片资源1",
-"url": "https://tieba-ares.cdn.bcebos.com/mis/2022-5/1653034037345/186363ee83e9.png"
-},
-{
-"name": "百度贴吧-图片资源2",
-"url": "https://imgsa.baidu.com/forum/pic/item/1e41a7014a90f603a3e0dea13412b31bb251edcc.jpg"
-},
-{
-"name": "百度视频-静态资源1",
-"url": "https://jmy-video.baidu.com/7b828dab3003f3841f3a026b437cf879_1280_720.mp4"
-},
-{
-"name": "百度视频-图片资源1",
-"url": "https://avatar.bdstatic.com/it/u=3525109608,2713994146&fm=3012"
-},
-{
-"name": "百度视频-图片资源2",
-"url": "https://pic.rmb.bdstatic.com/baidu-rmb-video-cover-1/2024-1/1705996556941/724684ad74c9.png"
-},
-{
-"name": "百度页游-静态资源1",
-"url": "https://fenwan.cdn.bcebos.com/webgame/static/webgame/js/index.aea21658.js"
-},
-{
-"name": "百度文库-静态资源2",
-"url": "https://wkstatic.bdimg.com/static/ndpcwenku/static/pcCoreClient/js/views/1b65f79a0217ad721cce.js"
-}
-]
-},
-{
-"name": "爱奇艺",
-"type": "download",
-"items": [
-{
-"name": "爱奇艺-静态资源1",
-"url": "https://stc.iqiyipic.com/gaze/fingerprint/1.0.58/fingerprint.umd.min.js"
-},
-{
-"name": "爱奇艺-静态资源2",
-"url": "https://static.iqiyi.com/js/player_v3/pcweb.wonder.12.92.online.js"
-},
-{
-"name": "爱奇艺-静态资源3",
-"url": "https://static-s.iqiyi.com/qysdk/payment/static/js/main.js"
-},
-{
-"name": "爱奇艺-静态资源4",
-"url": "https://www.iqiyi.com/static/2024913091751/css/main.css"
-},
-{
-"name": "爱奇艺-静态资源5",
-"url": "https://security.iqiyi.com/static/cook/v1/cooksdk.js"
-},
-{
-"name": "爱奇艺-图片资源5",
-"url": "https://static.g.iqiyi.com/qiplay2/e1339c7c-1cfc-458a-b165-62ec14e59f19.png"
-}
-]
-},
-{
-"name": "阿里系",
-"type": "download",
-"items": [
-{
-"name": "阿里云-图片资源1",
-"url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
-},
-{
-"name": "阿里云-图片资源2",
-"url": "https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg"
-},
-{
-"name": "阿里云-静态资源1",
-"url": "https://g.alicdn.com/AWSC/fireyejs/1.228.23/fireyejs.js"
-},
-{
-"name": "淘宝-静态资源2",
-"url": "https://o.alicdn.com/tbhome/tbnav/index.js"
-},
-{
-"name": "淘宝-静态资源3",
-"url": "https://at.alicdn.com/t/a/font_403341_6q1chd11nes.woff2"
-},
-{
-"name": "支付宝-静态资源1",
-"url": "https://mdn.alipayobjects.com/ind_developertool/afts/file/A*fSAmSbgxLosAAAAAAAAAAAAADlx-AQ?af_fileName=AlipayKeyTool-2.0.3.dmg"
-},
-{
-"name": "支付宝-静态资源2",
-"url": "https://gw.alipayobjects.com/render/p/yuyan/180020010001210191/umi.9f3e4149.js"
-},
-{
-"name": "支付宝-静态资源3",
-"url": "https://ur.alipay.com/tracert_a1911.js"
-}
-]
-},
-{
-"name": "中国联通",
-"type": "download",
-"items": [
-{
-"name": "联通官网-图片资源2(中国联通)",
-"url": "https://www.10010.com/wt_service_web/copyright/images/jifenshangcheng.png"
-},
-{
-"name": "联通官网-图片资源3(中国联通)",
-"url": "https://iservice.10010.com/wt_manage/uploadImg/1730297793913.png"
-},
-{
-"name": "联通官网-静态资源1(中国联通)",
-"url": "https://www.10010.com/wt_service_web/js/header.js"
-}
-]
-},
-{
-"name": "中国电信",
-"type": "download",
-"items": [
-{
-"name": "电信官网-静态资源1(中国电信)",
-"url": "https://bigdata-behaviordata.189.cn:9002/chinatelecom/chinatelecom.min.js"
-},
-{
-"name": "天翼云(中国电信)",
-"url": "https://vod-origin-rjzy.gdoss.xstore.ctyun.cn/f9ea5388dc0447aa88a5b92f07f1a8f7.mp4"
-},
-{
-"name": "天翼云会议-静态资源1(中国电信)",
-"url": "https://cloudmeeting.189.cn/static/js/chunk-vendors.624b9116.js"
-},
-{
-"name": "天翼云盘-静态资源1(中国电信)",
-"url": "https://static.e.189.cn/open/login/page/web/v5.0/static/js/captch.min.js?v1.1"
-},
-{
-"name": "优酷-图片资源1",
-"url": "https://m.ykimg.com/0584000066BEC16C13EB661302C6D644"
-},
-{
-"name": "优酷-图片资源2",
-"url": "https://liangcang-material.alicdn.com/prod/upload/b4cef471dbfb452fbff8a61102a8ca9a.webp.gif"
-},
-{
-"name": "优酷-图片资源3",
-"url": "https://static.youku.com/user/avatar/1350/23.png"
-},
-{
-"name": "华为官网-图片资源1",
-"url": "https://consumer.huawei.com/content/dam/huawei-cbg-site/cn/mkt/huawei-cloud-service/appgallery/application-boutique-pc1.jpg"
-},
-{
-"name": "华为云-静态资源1",
-"url": "https://res.hc-cdn.com/cnpm-baseui/2.8.11/fonts/HuaweiSans-Bold.ttf"
-},
-{
-"name": "华为云-图片资源1",
-"url": "https://res-static.hc-cdn.cn/cloudbu-site/china/zh-cn/HWCdeveloper/shemei/bilibili-qc.jpg"
-},
-{
-"name": "华为云-静态资源2",
-"url": "https://portal.hc-cdn.com/cnpm-baseui/2.8.11/index.css"
-},
-{
-"name": "小米开放平台-静态资源1",
-"url": "https://dev.mi.com/console/css/main.css"
-},
-{
-"name": "小米开放平台-静态资源2",
-"url": "https://cdn.cnbj1.fds.api.mi-img.com/appstore-developer-web-fe/production/static/js/14.45dbc296.chunk.js"
-},
-{
-"name": "小米开放平台-静态资源3",
-"url": "https://cdn.web-global.fds.api.mi-img.com/mcfe--mi-account/static/static/media/banner.92c693b4..jpg"
-},
-{
-"name": "小米开放平台-静态资源4",
-"url": "https://mcfe--account-static-legacy.cnbj1.mi-fds.com/mcfe--account-static-legacy/static/prod/captcha-static/v2/js/v.js"
-},
-{
-"name": "小米开放平台-静态资源5",
-"url": "https://static-verify.sec.xiaomi.com/v2/js/v.js"
-},
-{
-"name": "京东商城-静态资源1",
-"url": "https://wq.360buyimg.com/jdm-home-page/pages/js/index.aeba0df4.js"
-},
-{
-"name": "京东商城-静态资源2",
-"url": "https://storage.360buyimg.com/babelnode/jd-jssdk/4.2.1/jd-jssdk.js"
-},
-{
-"name": "京东商城-静态资源4",
-"url": "https://storage.jd.com/jdmobile/JDMALL-PC2.apk"
-},
-{
-"name": "京东商城-图片资源1",
-"url": "https://m.360buyimg.com/seckillcms/jfs/t1/155683/19/46720/143938/66de6069Fcbca5419/a04efd5dd680737d.png"
-},
-{
-"name": "拼多多-静态资源1",
-"url": "https://static.pddpic.com/assets/js/react_pdd_50c6d8bdb252d256ae20_1026.js"
-},
-{
-"name": "拼多多-静态资源2",
-"url": "https://mcdn.pinduoduo.com/home/js/index.494d9edf.js"
-},
-{
-"name": "拼多多-静态资源3",
-"url": "https://lpcdn.pinduoduo.com/_next/static/chunks/74769-4e08eb3c27153a5f.js"
-},
-{
-"name": "拼多多-静态资源5",
-"url": "https://cd.pddpic.com/android_dev/2023-07-28/5c04772968aee57ca690fbe1e7f29467.apk"
-},
-{
-"name": "拼多多-图片资源1",
-"url": "https://funimg.pddpic.com/common/recruit/43c56034-ce04-49fc-9227-0d24a8e82849.png"
-},
-{
-"name": "拼多多-图片资源2",
-"url": "https://img.pddpic.com/gaudit-image/2024-06-01/3c2541af53af076d0b78c67fd51db13d.jpeg"
-},
-{
-"name": "拼多多-图片资源3",
-"url": "https://cdn.pinduoduo.com/upload/official_website/6b1f700d-70c7-4f9f-890c-eb9f9ae68425.png"
-},
-{
-"name": "拼多多-图片资源4",
-"url": "https://commimg.pddpic.com/add-crystal-outer/2023-04-11/70a3dea1-53d4-4da6-9397-d4bf2a884911.gif.slim.gif"
-},
-{
-"name": "逆水寒官网静态资源",
-"url": "https://n.v.netease.com/2018/1017/ba32725ee3a20ee1fbe874a45d1f7fa9qt.mp4"
-},
-{
-"name": "MCLauncher工具(阿里CDN)",
-"url": "https://x19.gdl.netease.com/MCLauncherTool_0.1.4.50447.exe"
-},
-{
-"name": "网易公开课(白云山CDN)",
-"url": "https://mov.bn.netease.com/movieMP4/2011/3/U/1/S6V22L0U1.mp4"
-}
-]
-},
-{
-"name": "咪咕系列",
-"type": "download",
-"items": [
-{
-"name": "咪咕音乐-静态资源1",
-"url": "https://wsdkdl.migu.cn/common/mgmusic/migu_https.js"
-},
-{
-"name": "咪咕音乐-静态资源2[统计不准确]",
-"url": "https://webpay.migu.cn:8443/migunetsdk/webJs/frame.html?netId=b486900f41fc411187240dcb45fdbc8d&client=WWW&umark=Common2&protocol=https&mv=3.0.1&t=1704113156924"
-},
-{
-"name": "咪咕视频-图片资源1",
-"url": "https://img.cmvideo.cn/publish/noms/2022/10/14/1O3VIGPVP6HTS.jpg"
-},
-{
-"name": "咪咕视频-图片资源2",
-"url": "https://wapx.cmvideo.cn/publish/poms/image/1752/094/251/202311151425_477841_HSJ1080H.jpg"
-},
-{
-"name": "咪咕快游-图片资源1(中国移动)[非定向]",
-"url": "https://wcache.migu.cn/prod/upload/game_resource/contentRelated/006212638000/84/1662605671282.jpg"
-},
-{
-"name": "咪咕快游-图片资源2(中国移动)[非定向]",
-"url": "https://static.migucloud.com/article/462/20191213/4f23d49723e5a46938718a3f4587734f.png"
-},
-{
-"name": "咪咕快游-图片资源3(中国移动)[非定向]",
-"url": "https://scache.cmam.migu.cn/nuwa/culture/202309/20230905/model/m9100013009198/f1164326392847015936.png?timestamp=2332214977783&sid=2445210582&encrypt=936ee89150a3158eb577614473f425e5"
-},
-{
-"name": "咪咕快游-图片资源4(中国移动)[非定向]",
-"url": "https://freeserver.migufun.com/resource/beta/picture/system/20211003/20211003124601120_28.jpg"
-},
-{
-"name": "咪咕快游-图片资源5(中国移动)",
-"url": "https://gcache.migu.cn/prod/upload/game_resource/channel_for_homepage_game2/202408/2909/59/20240829095855985_mgwebp1.jpg"
-},
-{
-"name": "咪咕快游-静态资源1(中国移动)[非定向]",
-"url": "https://h5cdn.migufun.com/middleh5/_nuxt/9d04212.js"
-},
-{
-"name": "中国移动商城-图片资源1",
-"url": "https://img1.shop.10086.cn/goods/ts27zarfe8d5jgvs_940x7200"
-},
-{
-"name": "中国移动业务-图片资源2",
-"url": "https://res.app.coc.10086.cn/group1/M00/03/0D/CtFOBmTxRyaAYjdGAAAhPGgdCJw206.png"
-}
-]
-},
-{
-"name": "移动云",
-"type": "download",
-"items": [
-{
-"name": "移动云-静态资源2",
-"url": "https://ecloud.eos-guangzhou-1.cmecloud.cn/op-login-static/3.6.0/js/vendor.6a12e122d36e1092fd0e.js"
-},
-{
-"name": "知乎-图片资源",
-"url": "https://picx.zhimg.com/v2-af7215f2d8266fec068e049b7559cd19.gif"
-},
-{
-"name": "知乎-静态资源",
-"url": "https://static.zhihu.com/parker/campaign/vendors.5b2b99d85429920d2342.js"
-},
-{
-"name": "OPPP商城静态资源",
-"url": "https://dsfs.oppo.com/oppo/shop-pc-v2/main/js/9fb472f.js"
-},
-{
-"name": "VIVO官网静态资源",
-"url": "https://wwwstatic.vivo.com.cn/vivoportal/files/resource/funtouch/1651200648928/images/os2-jude-video.mp4"
-},
-{
-"name": "VIVO应用商店",
-"url": "https://imgwsdl.vivo.com.cn/appstore/developer/soft/20210125/202101251051528awqa.apk"
-},
-{
-"name": "上海灵羊1",
-"url": "https://activity.hdslb.com/blackboard/static/20210604/4d40bc4f98f94fbc71c235832ce3efd4/hJEhL6jGOY.zip"
-},
-{
-"name": "搜狐视频",
-"url": "https://photocdn.tv.sohu.com/img/20230419/pic_org_88f470db-176e-40c5-a514-a31993dabb27.jpg"
-},
-{
-"name": "搜狐图片",
-"url": "https://p8.itc.cn/c_fit,w_1800,h_1200,q_100/images01/20230723/e23a27186e404472ab1f659a1ae18cae.jpeg"
-},
-{
-"name": "新浪",
-"url": "https://i.apps.sina.cn/tqt/zip/com.sina.tianqitong_6.1892_2019.07.29.17.54.18.apk"
-},
-{
-"name": "斗鱼CDN",
-"url": "https://sta-op.douyucdn.cn/dyadmin-ext/pkg/pc/DY_OBS_Studio_Ext/20221208103446325/DYOBSStudioExtension_1.0.2.3.exe"
-},
-{
-"name": "斗鱼CDN-小文件",
-"url": "https://shark2.douyucdn.cn/front-publish/live-master/lib/vendor-room_4e3a873.js"
-},
-{
-"name": "七牛云",
-"url": "https://devtools.qiniu.com/linux/amd64/qrsctl"
-},
-{
-"name": "Quark_Browser(uc)",
-"url": "https://image.uc.cn/s/uae/g/2i/uninstallpg/Quark%20Browser.apk"
-},
-{
-"name": "Vultr 1G(新加坡)",
-"url": "https://sgp-ping.vultr.com/vultr.com.1000MB.bin"
-},
-{
-"name": "Vultr 1G(纽约)",
-"url": "https://nj-us-ping.vultr.com/vultr.com.1000MB.bin"
-},
-{
-"name": "Vultr 1G(日本)",
-"url": "https://hnd-jp-ping.vultr.com/vultr.com.100MB.bin"
-},
-{
-"name": "Vultr 1G(德国)",
-"url": "https://fra-de-ping.vultr.com/vultr.com.100MB.bin"
-},
-{
-"name": "Vultr 1G(美国洛杉矶)",
-"url": "https://lax-ca-us-ping.vultr.com/vultr.com.100MB.bin"
-},
-{
-"name": "Vultr 1G(美国2)",
-"url": "https://nj-us-ping.vultr.com/vultr.com.100MB.bin"
-}
-]
-},
-{
-"name": "Github",
-"type": "download",
-"items": [
-{
-"name": "Github-静态资源1",
-"url": "https://github.githubassets.com/assets/optimizely-f41bb566674d.js"
-},
-{
-"name": "Github-静态资源2",
-"url": "https://github.githubassets.com/assets/cat-7c075cc3dda1.glb"
-},
-{
-"name": "Github-图片资源1",
-"url": "https://github.githubassets.com/images/mona-whisper.gif"
-},
-{
-"name": "Github-图片资源2",
-"url": "https://github.githubassets.com/assets/head_sss-adeeeaf1228e.jpg"
-}
-]
-},
-{
-"name": "Apple",
-"type": "download",
-"items": [
-{
-"name": "apple-静态资源1",
-"url": "https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js"
-},
-{
-"name": "apple-静态资源2",
-"url": "https://js-cdn.music.apple.com/musickit/v2/amp/musickit.js"
-},
-{
-"name": "apple-静态资源3",
-"url": "https://js-cdn.music.apple.com/hls.js/2.610.3/hls.js/hls.js"
-},
-{
-"name": "apple-静态资源4",
-"url": "https://apptrailers.itunes.apple.com/itunes-assets/PurpleVideo221/v4/e5/b8/e1/e5b8e119-58bf-0a47-45d3-28519a8bfdf4/P850599853_Anull_video_gr290_sdr_886x1920-.mp4"
-},
-{
-"name": "apple-图片资源1",
-"url": "https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/60/60/23/606023fb-33d6-79e8-bcfe-7793257abd65/3_iOS_6.7.jpg/230x0w.webp"
-}
-]
-},
-{
-"name": "Google",
-"type": "download",
-"items": [
-{
-"name": "Google-静态资源1",
-"url": "https://fonts.gstatic.com/s/roboto/v47/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2"
-},
-{
-"name": "Google-静态资源2",
-"url": "https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=YouTube+Sans:wght@300..900&display=swap"
-}
-]
-},
-{
-"name": "Cloudflare",
-"type": "download",
-"items": [
-{
-"name": "Cloudflare-静态资源1",
-"url": "https://challenges.cloudflare.com/turnstile/v0/g/ec4b873d446c/api.js"
-}
-]
-},
-{
-"name": "广告",
-"type": "download",
-"items": [
-{
-"name": "书旗小说-图片广告01",
-"url": "https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA2NjE0ZWI3MDoxMDY2MjcyNzk1MzU0Nw==.jpg"
-},
-{
-"name": "书旗小说-图片广告02",
-"url": "https://sf3-fe-tos.pglstatp-toutiao.com/obj/ad-pattern/static/images/1700635544820_splashbackfor5.jpg"
-},
-{
-"name": "书旗小说-图片广告03",
-"url": "https://img.meituan.net/content/f56fe3456d25d951cdd32efa56d608a290831.jpg"
-},
-{
-"name": "书旗小说-图片广告04",
-"url": "https://p0.meituan.net/content/367fc11bb0ef629cb72988bfc5c9a930267166.jpg"
-},
-{
-"name": "书旗小说-图片广告05",
-"url": "https://p1.meituan.net/linglong/2a7ff2c8b1928507c721c577762b8321285561.jpg"
-},
-{
-"name": "书旗小说-图片广告06",
-"url": "https://sf3-fe-tos.pglstatp-toutiao.com/obj/ad-pattern/static/images/1701689556172_swipe-up.gif"
-},
-{
-"name": "书旗小说-图片广告07",
-"url": "https://s3plus.meituan.net/v1/mss_5017c592a8a946d2a54eb62a76ba299c/nebulafile/e73d23a1d2929534c167ad61c75b8aae"
-},
-{
-"name": "书旗小说-图片广告08",
-"url": "https://pgdt.ugdtimg.com/141/20204/snscosdownload/SZ/reserved/689059e200078a5908be7c8d71f701150000008d00004eec"
-},
-{
-"name": "书旗小说-图片广告09",
-"url": "https://cdn.1rtb.com/s1000/jd.jpg"
-},
-{
-"name": "书旗小说-图片广告10",
-"url": "https://p2-lm.adukwai.com/udata/pkg/aW1hZ2UtcGtnOmFkX2RzcF9pbWFnZV91cGxvYWQ6Mzc4NDA0NTU0NzpNRVJDSEFOVDpbQkA0OWQ1OTQ3Mjo0ODkyOTI5MzA3NTQ3.jpg"
-}
-]
-}
-];
-</script>
-<script>
-/* =====================================================================
- * 流量消耗器 v2.0  单文件应用逻辑
- * 能力：多线程流式下载 / 首块探测 / 跨域提示 / 流量统计与上限 /
- *       速率+延迟滚动图表 / 国内外IP轮询 / 四目标延迟 /
- *       后台保活 / 标题栏流量 / 深浅色 / 移动端 /
- *       伪熄屏 / 地址配置（分组·搜索·增删·一键检测·一键设为当前）
- * ===================================================================== */
-(function () {
-  'use strict';
-  const $ = id => document.getElementById(id);
-  const LS = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  };
-  function getCookie(n) { const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : ''; }
-  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function hostOf(u) { try { return new URL(u).host; } catch (e) { return u; } }
-  function fmtSize(n) {
-    const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
-    while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-    return n.toFixed(i === 0 ? 0 : (i >= 3 ? 2 : 1)) + u[i];
-  }
-  function fmtSpeed(bps) { // bytes per second
-    if (bps < 1024) return bps.toFixed(0) + ' B/s';
-    return fmtSize(bps) + '/s';
-  }
-  function cacheBust(u) {
-    const sep = u.indexOf('?') >= 0 ? '&' : '?';
-    return u + sep + '_tk=' + Date.now().toString(36) + Math.floor(Math.random() * 1e6).toString(36);
-  }
-
-  /* ================= 地址数据状态 ================= */
-  let customLinks = LS.get('tk_custom', []);           // [{name,url,type}]
-  let hiddenUrls = LS.get('tk_hidden', []);            // 被隐藏的默认地址
-  let detectResults = LS.get('tk_detect', {});         // {url: result}
-  function buildGroups() {
-    const groups = DEFAULT_GROUPS.map(g => ({
-      name: g.name,
-      type: g.type || 'download',
-      items: g.items.filter(it => !hiddenUrls.includes(it.url))
-    })).filter(g => g.items.length);
-    if (customLinks.length) groups.push({ name: '自定义链接', type: 'download', items: customLinks.map(it => ({ ...it, custom: true })) });
-    return groups;
-  }
-  function flatItems(groups) {
-    const out = [];
-    groups.forEach(g => g.items.forEach(it => out.push({ ...it, group: g.name, type: g.type })));
-    return out;
-  }
-  const ALL = () => flatItems(buildGroups());
-  const TOTAL = () => ALL().length;
-
-  /* ================= 当前地址 ================= */
-  let current = LS.get('tk_current', null);
-  // 旧 cookie 迁移
-  (function migrate() {
-    if (!current) {
-      const diy = getCookie('diy');
-      if (diy) { current = { name: '自定义', url: diy }; }
-      else {
-        const first = DEFAULT_GROUPS[0].items[0];
-        current = { name: first.name, url: first.url };
-      }
-    }
-  })();
-  function setCurrent(item) {
-    current = { name: item.name, url: item.url };
-    LS.set('tk_current', current);
-    $('curName').textContent = item.name;
-    $('curUrl').textContent = item.url;
-    if ($('diyLink').value !== item.url) $('diyLink').value = item.url;
-  }
-  setCurrent(current);
-
-  /* ================= 主题 ================= */
-  function applyTheme(t) {
-    document.documentElement.setAttribute('data-theme', t);
-    $('icoMoon').style.display = t === 'light' ? '' : 'none';
-    $('icoSun').style.display = t === 'dark' ? '' : 'none';
-    LS.set('tk_theme', t);
-  }
-  applyTheme(LS.get('tk_theme', 'light'));
-  $('themeBtn').addEventListener('click', () => {
-    applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
-    if (chart) { chart.dispose(); chart = null; initChart(); }
-  });
-
-  /* ================= 线程 / 自定义输入 ================= */
-  const threadEl = $('thread');
-  threadEl.value = LS.get('tk_thread', 4);
-  function clampThread() {
-    let v = parseInt(threadEl.value, 10);
-    if (isNaN(v)) v = 1;
-    v = Math.max(1, Math.min(32, v));
-    threadEl.value = v;
-    LS.set('tk_thread', v);
-  }
-  threadEl.addEventListener('change', clampThread);
-  $('thMinus').addEventListener('click', () => { threadEl.value = Math.max(1, (+threadEl.value || 1) - 1); clampThread(); });
-  $('thPlus').addEventListener('click', () => { threadEl.value = Math.min(32, (+threadEl.value || 1) + 1); clampThread(); });
-  $('diyLink').addEventListener('input', function () {
-    const u = this.value.trim();
-    if (u && /^https?:\/\//i.test(u)) {
-      setCurrent({ name: '自定义·' + hostOf(u), url: u });
-      LS.set('tk_current', current);
-    }
-  });
-
-  /* ================= 下载引擎 ================= */
-  let running = false, totalBytes = 0, startTs = 0, maxBytes = 0;
-  let winBytes = 0, lastTick = 0, firstBlockMs = null, corsNotified = 0;
-  let workers = [];
-  const startBtn = $('startBtn');
-  const docTitle = '流量消耗器';
-
-  // 流量上限（GB）
-  const maxGB = LS.get('tk_maxgb', 0);
-  function setMaxGb(gb) {
-    if (gb > 0) { LS.set('tk_maxgb', gb); maxBytes = gb * 1073741824; $('maxTag').textContent = ' / ' + fmtSize(maxBytes); }
-    else { LS.set('tk_maxgb', 0); maxBytes = 0; $('maxTag').textContent = ''; }
-  }
-  setMaxGb(maxGB || 0);
-  $('statTotal').addEventListener('click', () => {
-    const v = prompt('请输入流量上限(GB)\n不填或填 0 为不设置上限', LS.get('tk_maxgb', 0) || '');
-    if (v === null) return;
-    setMaxGb(parseFloat(v) || 0);
-  });
-
-  function setStatus(html, cls) {
-    $('statusLine').innerHTML = html ? ('<span class="' + (cls || '') + '">' + html + '</span>') : '';
-  }
-
-  async function downloadLoop(idx) {
-    while (running) {
-      const ctrl = new AbortController();
-      workers[idx] = ctrl;
-      const tReq = performance.now();
-      let reader = null;
-      try {
-        const res = await fetch(cacheBust(current.url), {
-          method: 'GET', cache: 'no-store', mode: 'cors',
-          credentials: 'omit', redirect: 'follow', signal: ctrl.signal
+        select.addEventListener('change', () => {
+            link.value = select.value;
         });
-        if (!res.ok) { await new Promise(r => setTimeout(r, 800)); continue; }
-        if (!res.body || !res.body.getReader) {
-          const b = await res.blob();
-          totalBytes += b.size; winBytes += b.size;
-          if (firstBlockMs === null) firstBlockMs = performance.now() - tReq;
-          continue;
+
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = `[${time}] ${msg}`;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
         }
-        reader = res.body.getReader();
-        while (running) {
-          const r = await reader.read();
-          if (r.done) break;
-          const n = r.value ? r.value.length : 0;
-          totalBytes += n; winBytes += n;
-          if (firstBlockMs === null) {
-            firstBlockMs = performance.now() - tReq;
-            setStatus('线程已连接 · 首块延迟 ' + firstBlockMs.toFixed(0) + ' ms · 持续下载中…', 'ok');
-          }
-          if (maxBytes > 0 && totalBytes >= maxBytes) { stopAll(true); break; }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+            if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
         }
-      } catch (e) {
-        if (e.name === 'AbortError') return;
-        // 跨域 / 网络错误
-        corsNotified++;
-        if (corsNotified === 1) {
-          setStatus('⚠ 该地址无法跨域读取（浏览器安全限制）或网络不可达：' + esc(current.url) + '。请更换支持 CORS 的地址，或在配置页检测。', 'bad');
+
+        function formatSpeed(bytesPerSecond) {
+            return formatSize(bytesPerSecond) + '/s';
         }
-        await new Promise(r => setTimeout(r, 1000));
-      } finally {
-        if (reader) try { reader.releaseLock(); } catch (e) {}
-      }
-    }
-  }
 
-  function startAll() {
-    if (!current.url || !/^https?:\/\//i.test(current.url)) { alert('请先填写或选择有效的测试地址'); return; }
-    clampThread();
-    running = true;
-    totalBytes = 0; winBytes = 0; firstBlockMs = null; corsNotified = 0;
-    startTs = performance.now(); lastTick = performance.now();
-    startBtn.textContent = '停止';
-    startBtn.className = 'btn btn-danger btn-block';
-    setStatus('连接中…');
-    const n = +threadEl.value;
-    workers = new Array(n);
-    for (let i = 0; i < n; i++) downloadLoop(i);
-    if ($('keepAlive').checked) keepAliveOn();
-    acquireWakeLock();
-  }
-  function stopAll(reached) {
-    if (!running) return;
-    running = false;
-    (workers || []).forEach(c => { try { c && c.abort(); } catch (e) {} });
-    workers = [];
-    startBtn.textContent = '开始';
-    startBtn.className = 'btn btn-primary btn-block';
-    document.title = docTitle;
-    if (reached) setStatus('已达到流量上限，自动停止。共消耗 ' + fmtSize(totalBytes), 'ok');
-    else if (totalBytes > 0) setStatus('已停止。共消耗 ' + fmtSize(totalBytes));
-    if (!$('keepAlive').checked) keepAliveOff();
-    releaseWakeLock();
-  }
-  startBtn.addEventListener('click', () => running ? stopAll(false) : startAll());
+        async function downloadOnce(url) {
+            const controller = new AbortController();
+            abortControllers.push(controller);
 
-  /* ================= 统一时钟：统计刷新 + 标题栏 + 图表滚动 ================= */
-  let lastLatency = null;
-  setInterval(() => {
-    let rateMB = 0;
-    if (running) {
-      const now = performance.now();
-      const dt = (now - lastTick) / 1000;
-      const speed = winBytes / Math.max(dt, 1e-3);
-      winBytes = 0; lastTick = now;
-      const elapsed = (now - startTs) / 1000;
-      const avg = totalBytes / Math.max(elapsed, 1e-3);
-      $('vTotal').textContent = fmtSize(totalBytes);
-      $('vSpeed').textContent = fmtSpeed(speed);
-      $('vMbps').textContent = (speed * 8 / 1e6).toFixed(1) + ' Mbps';
-      $('vAvg').textContent = fmtSpeed(avg);
-      document.title = '↓' + fmtSize(totalBytes) + ' ' + fmtSpeed(speed) + ' · ' + docTitle;
-      rateMB = speed / 1048576;
-    }
-    chartTick(rateMB, lastLatency);
-  }, 1000);
-  function resetStats() {
-    $('vTotal').textContent = '-'; $('vSpeed').textContent = '-'; $('vMbps').textContent = '-'; $('vAvg').textContent = '-';
-  }
+            try {
+                const resp = await fetch(url, {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: controller.signal
+                });
 
-  /* ================= 实时图表 ================= */
-  let chart = null;
-  const MAX_POINTS = 60;
-  const chartData = { t: [], rate: [], lat: [] };
-  function chartTheme() { return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
-  function initChart() {
-    if (typeof echarts === 'undefined') { $('chart').innerHTML = '<div class="empty">图表库（ECharts CDN）未加载</div>'; return; }
-    chart = echarts.init($('chart'));
-    const dark = chartTheme() === 'dark';
-    chart.setOption({
-      animation: false,
-      tooltip: { trigger: 'axis' },
-      legend: { show: false },
-      grid: { left: 50, right: 50, top: 16, bottom: 28 },
-      xAxis: { type: 'category', data: chartData.t, axisLabel: { color: dark ? '#9aa3b2' : '#6b7280', fontSize: 10 }, axisLine: { lineStyle: { color: dark ? '#282e3b' : '#e5e7eb' } } },
-      yAxis: [
-        { type: 'value', name: 'MB/s', axisLabel: { color: dark ? '#9aa3b2' : '#6b7280' }, splitLine: { lineStyle: { color: dark ? '#222734' : '#eef0f5' } } },
-        { type: 'value', name: 'ms', axisLabel: { color: dark ? '#9aa3b2' : '#6b7280' }, splitLine: { show: false } }
-      ],
-      series: [
-        { name: '速率', type: 'line', smooth: true, showSymbol: false, data: chartData.rate, lineStyle: { color: '#536fc4', width: 2 }, areaStyle: { color: 'rgba(83,111,196,.15)' } },
-        { name: '延迟', type: 'line', yAxisIndex: 1, smooth: true, showSymbol: false, data: chartData.lat, lineStyle: { color: '#90ca74', width: 1.5 } }
-      ]
-    });
-  }
-  function chartTick(rateMB, latVal) {
-    const d = new Date();
-    const lbl = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
-    chartData.t.push(lbl);
-    chartData.rate.push(+rateMB.toFixed(3));
-    chartData.lat.push(latVal == null ? null : latVal);
-    if (chartData.t.length > MAX_POINTS) { chartData.t.shift(); chartData.rate.shift(); chartData.lat.shift(); }
-    if (chart) chart.setOption({ xAxis: { data: chartData.t }, series: [{ data: chartData.rate }, { data: chartData.lat }] });
-  }
-  window.addEventListener('resize', () => chart && chart.resize());
-  setTimeout(initChart, 60);
+                if (!resp.ok) {
+                    log('请求失败: HTTP ' + resp.status, 'err');
+                    return;
+                }
 
-  /* ================= 延迟检测 ================= */
-  async function pingOnce(url, timeoutMs) {
-    const ctrl = new AbortController();
-    const tm = setTimeout(() => ctrl.abort(), timeoutMs || 5000);
-    const t0 = performance.now();
-    try {
-      await fetch(cacheBust(url), { mode: 'no-cors', cache: 'no-store', credentials: 'omit', signal: ctrl.signal, redirect: 'follow' });
-      return Math.round(performance.now() - t0);
-    } catch (e) { return -1; } finally { clearTimeout(tm); }
-  }
-  const targets = [
-    { id: 'laycn', url: 'https://www.baidu.com/favicon.ico' },
-    { id: 'laygb', url: 'https://www.cloudflare.com/favicon.ico' },
-    { id: 'laygh', url: 'https://github.com/favicon.ico' },
-    { id: 'layyt', url: 'https://www.youtube.com/favicon.ico' }
-  ];
-  let pingIdx = 0;
-  async function pingLoop() {
-    const t = targets[pingIdx % targets.length];
-    pingIdx++;
-    const ms = await pingOnce(t.url, 5000);
-    const el = $(t.id);
-    if (ms < 0) { el.textContent = '超时'; el.style.color = 'var(--bad)'; lastLatency = null; }
-    else { el.textContent = ms + ' ms'; el.style.color = ms < 200 ? 'var(--ok)' : 'var(--warn)'; lastLatency = ms; }
-  }
-  pingLoop();
-  setInterval(pingLoop, 4000);
+                const reader = resp.body.getReader();
+                requestCount++;
+                requestCountEl.textContent = requestCount;
 
-  /* ================= 出口 IP（国内 ipip.net / 全球 ipinfo.io 轮询） ================= */
-  async function loadIpCn() {
-    const el = $('ipcn');
-    try {
-      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 8000);
-      const res = await fetch(cacheBust('https://myip.ipip.net/'), { cache: 'no-store', signal: ctrl.signal });
-      clearTimeout(tm);
-      const txt = (await res.text()).replace(/\s+/g, ' ').trim();
-      el.textContent = txt || '解析失败'; el.style.color = 'var(--text)';
-    } catch (e) {
-      el.textContent = '获取失败（跨域限制）'; el.style.color = 'var(--bad)';
-    }
-  }
-  async function loadIpGb() {
-    const el = $('ipgb');
-    try {
-      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 8000);
-      const res = await fetch(cacheBust('https://ipinfo.io/json'), { cache: 'no-store', signal: ctrl.signal });
-      clearTimeout(tm);
-      const j = await res.json();
-      el.textContent = [j.ip, j.city, j.region, j.country, j.org].filter(Boolean).join(' · ');
-      el.style.color = 'var(--text)';
-    } catch (e) {
-      el.textContent = '获取失败（跨域/限流）'; el.style.color = 'var(--bad)';
-    }
-  }
-  loadIpCn(); loadIpGb();
-  let ipFlip = false;
-  setInterval(() => { ipFlip = !ipFlip; ipFlip ? loadIpCn() : loadIpGb(); }, 30000);
-
-  /* ================= 后台保活（静音循环 + 屏幕常亮） ================= */
-  function makeSilentWav() {
-    const sr = 8000, dur = 1, n = sr * dur, ab = new ArrayBuffer(44 + n), dv = new DataView(ab);
-    const w = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-    w(0, 'RIFF'); dv.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt ');
-    dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
-    dv.setUint32(24, sr, true); dv.setUint32(28, sr, true); dv.setUint16(32, 1, true); dv.setUint16(34, 8, true);
-    w(36, 'data'); dv.setUint32(40, n, true);
-    for (let i = 0; i < n; i++) dv.setUint8(44 + i, 128);
-    return URL.createObjectURL(new Blob([ab], { type: 'audio/wav' }));
-  }
-  const audio = $('keepAudio');
-  audio.src = makeSilentWav();
-  $('keepAlive').checked = LS.get('tk_keep', false);
-  function keepAliveOn() {
-    LS.set('tk_keep', true);
-    audio.play().catch(() => { /* 需用户手势，点击开始时一般已允许 */ });
-    acquireWakeLock();
-  }
-  function keepAliveOff() { LS.set('tk_keep', false); audio.pause(); }
-  $('keepAlive').addEventListener('change', function () { this.checked ? keepAliveOn() : keepAliveOff(); });
-
-  let wakeLock = null;
-  async function acquireWakeLock() {
-    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
-  }
-  function releaseWakeLock() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && (running || $('keepAlive').checked)) acquireWakeLock();
-  });
-
-  /* ================= 伪熄屏 ================= */
-  const off = $('screenOff'), offHint = $('offHint'), offClock = $('offClock');
-  let lpTimer = null;
-  function enterOff() {
-    off.classList.add('open');
-    offHint.style.opacity = '0.55';
-    offClock.textContent = '';
-    setTimeout(() => { offHint.style.opacity = '0'; }, 1800);
-    if (navigator.userAgent.includes('Android') || navigator.userAgent.includes('iPhone')) {
-      try { if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {}); } catch (e) {}
-    }
-  }
-  function exitOff() {
-    off.classList.remove('open');
-    offHint.style.opacity = '0.55';
-    try { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); } catch (e) {}
-  }
-  function lpStart(e) {
-    clearTimeout(lpTimer);
-    lpTimer = setTimeout(() => { lpTimer = null; enterOff(); }, 600);
-  }
-  function lpCancel() { clearTimeout(lpTimer); }
-  const brand = $('brand');
-  brand.addEventListener('mousedown', lpStart);
-  brand.addEventListener('mouseup', lpCancel);
-  brand.addEventListener('mouseleave', lpCancel);
-  brand.addEventListener('mousemove', lpCancel);
-  brand.addEventListener('touchstart', lpStart, { passive: true });
-  brand.addEventListener('touchmove', lpCancel, { passive: true });
-  brand.addEventListener('touchend', lpCancel);
-  brand.addEventListener('touchcancel', lpCancel);
-  brand.addEventListener('contextmenu', e => e.preventDefault());
-  // 双击退出
-  let lastTap = 0, tapClock = null;
-  function offTap() {
-    const now = Date.now();
-    if (now - lastTap < 320) { exitOff(); lastTap = 0; return; }
-    lastTap = now;
-    const d = new Date();
-    offClock.textContent = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ' · 双击退出';
-    offClock.style.color = '#333';
-    clearTimeout(tapClock);
-    tapClock = setTimeout(() => { offClock.textContent = ''; }, 1600);
-  }
-  off.addEventListener('click', offTap);
-  off.addEventListener('touchend', e => { e.preventDefault(); offTap(); }, { passive: false });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && off.classList.contains('open')) exitOff(); });
-
-  /* ================= 配置页：渲染 / 搜索 / 增删 / 设为当前 ================= */
-  const modal = $('configModal');
-  function renderConfig() {
-    const kw = $('searchInput').value.trim().toLowerCase();
-    const groups = buildGroups();
-    const body = $('modalBody');
-    let shown = 0;
-    body.innerHTML = groups.map(g => {
-      const items = g.items.filter(it => !kw ||
-        it.name.toLowerCase().includes(kw) || it.url.toLowerCase().includes(kw) || g.name.toLowerCase().includes(kw));
-      if (!items.length) return '';
-      shown += items.length;
-      const collapsed = kw ? '' : ' collapsed';
-      return '<div class="g-group' + collapsed + '">' +
-        '<div class="g-head"><span class="arrow">▾</span>' + esc(g.name) +
-        (g.type === 'upload' ? '<span class="tag up">上传</span>' : '') +
-        '<span class="g-count">' + items.length + '</span></div>' +
-        '<div class="g-body">' + items.map(it => itemRow(it, g)).join('') + '</div></div>';
-    }).join('');
-    if (!body.innerHTML) body.innerHTML = '<div class="empty">没有匹配的地址</div>';
-    $('mSub').textContent = '共 ' + TOTAL() + ' 条 · 当前显示 ' + shown + ' 条' + (kw ? '（筛选）' : '');
-    // 折叠交互
-    body.querySelectorAll('.g-head').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('collapsed')));
-  }
-  function itemRow(it, g) {
-    const active = current.url === it.url;
-    const r = detectResults[it.url];
-    let resHtml = '<span style="color:var(--muted)">未检测</span>';
-    if (r) {
-      if (r.state === 'run') resHtml = '<span class="r-run">检测中…</span>';
-      else if (r.state === 'ok') resHtml = '<span class="r-ok">✓ ' + r.lat + 'ms · ' + r.speed + '</span>';
-      else if (r.state === 'warn') resHtml = '<span class="r-warn">' + esc(r.msg) + ' · ' + r.lat + 'ms</span>';
-      else if (r.state === 'bad') resHtml = '<span class="r-bad">' + esc(r.msg) + '</span>';
-    }
-    return '<div class="g-item' + (active ? ' active' : '') + '" data-url="' + esc(it.url) + '">' +
-      '<div class="g-main"><div class="g-name">' + esc(it.name) + (active ? ' <span class="tag">当前</span>' : '') +
-      (g.type === 'upload' ? ' <span class="tag up">上传</span>' : '') + '</div>' +
-      '<div class="g-url">' + esc(it.url) + '</div></div>' +
-      '<div class="g-result">' + resHtml + '</div>' +
-      '<div class="g-actions">' +
-      '<button class="icon-x" title="设为当前测速地址" data-act="use">▶</button>' +
-      '<button class="icon-x" title="复制地址" data-act="copy">⧉</button>' +
-      '<button class="icon-x del" title="' + (it.custom ? '删除自定义' : '隐藏（可恢复）') + '" data-act="del">✕</button>' +
-      '</div></div>';
-  }
-  bodyBind();
-  function bodyBind() {
-    $('modalBody').addEventListener('click', e => {
-      const btn = e.target.closest('button[data-act]');
-      const row = e.target.closest('.g-item');
-      if (!row) return;
-      const url = row.getAttribute('data-url');
-      if (!btn) return;
-      const item = ALL().find(x => x.url === url);
-      if (!item) return;
-      if (btn.dataset.act === 'use') {
-        setCurrent(item);
-        $('diyLink').value = item.url;
-        renderConfig();
-      } else if (btn.dataset.act === 'copy') {
-        navigator.clipboard ? navigator.clipboard.writeText(url).catch(() => {}) : null;
-        btn.textContent = '✓'; setTimeout(() => btn.textContent = '⧉', 900);
-      } else if (btn.dataset.act === 'del') {
-        if (item.custom) {
-          customLinks = customLinks.filter(x => x.url !== url);
-          LS.set('tk_custom', customLinks);
-        } else {
-          if (!hiddenUrls.includes(url)) hiddenUrls.push(url);
-          LS.set('tk_hidden', hiddenUrls);
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    if (!running) {
+                        controller.abort();
+                        break;
+                    }
+                    totalSize += value.length;
+                    totalSizeEl.textContent = formatSize(totalSize);
+                }
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    log('请求异常: ' + e.message, 'err');
+                }
+            }
         }
-        if (current.url === url) {
-          const f = DEFAULT_GROUPS[0].items.find(x => !hiddenUrls.includes(x.url));
-          setCurrent(f); $('diyLink').value = f.url;
+
+        async function startTest() {
+            const url = link.value.trim();
+            if (!url) {
+                log('请先选择或输入测试地址', 'err');
+                return;
+            }
+
+            if (!/^https?:\/\//i.test(url)) {
+                log('URL 必须以 http:// 或 https:// 开头', 'err');
+                return;
+            }
+
+            running = true;
+            totalSize = 0;
+            requestCount = 0;
+            lastSize = 0;
+            lastTime = Date.now();
+            startTime = Date.now();
+            abortControllers = [];
+
+            result.classList.add('active');
+            totalSizeEl.textContent = '0 B';
+            speedEl.textContent = '0 B/s';
+            requestCountEl.textContent = '0';
+            durationEl.textContent = '0 s';
+            logBox.innerHTML = '';
+
+            log('开始测试: ' + url, 'info');
+            log('持续下载中，请观察速度与流量变化...', 'info');
+
+            timer = setInterval(() => {
+                if (!running) return;
+                downloadOnce(url);
+            }, 500);
+
+            speedTimer = setInterval(() => {
+                if (!running) return;
+                const now = Date.now();
+                const duration = (now - startTime) / 1000;
+                const bytes = totalSize - lastSize;
+                const time = (now - lastTime) / 1000;
+                const speed = time > 0 ? bytes / time : 0;
+
+                speedEl.textContent = formatSpeed(speed);
+                durationEl.textContent = duration.toFixed(1) + ' s';
+
+                lastSize = totalSize;
+                lastTime = now;
+            }, 1000);
+
+            downloadOnce(url);
         }
-        renderConfig();
-      }
-    });
-  }
-  $('searchInput').addEventListener('input', renderConfig);
-  $('openConfig').addEventListener('click', () => { modal.classList.add('open'); renderConfig(); });
-  $('btnPick').addEventListener('click', () => { modal.classList.add('open'); renderConfig(); });
-  $('closeConfig').addEventListener('click', () => modal.classList.remove('open'));
-  $('btnRestore').addEventListener('click', () => { hiddenUrls = []; LS.set('tk_hidden', hiddenUrls); renderConfig(); });
 
-  // 自定义添加
-  $('btnAdd').addEventListener('click', () => $('addRow').classList.add('open'));
-  $('btnAddCancel').addEventListener('click', () => $('addRow').classList.remove('open'));
-  $('btnAddOk').addEventListener('click', () => {
-    const url = $('addUrl').value.trim();
-    let name = $('addName').value.trim();
-    if (!/^https?:\/\//i.test(url)) { alert('请输入合法的 http/https 地址'); return; }
-    if (!name) name = '自定义·' + hostOf(url);
-    if (customLinks.some(x => x.url === url)) { alert('该自定义地址已存在'); return; }
-    customLinks.push({ name, url, type: 'download' });
-    LS.set('tk_custom', customLinks);
-    $('addName').value = ''; $('addUrl').value = ''; $('addRow').classList.remove('open');
-    renderConfig();
-  });
+        function stopTest() {
+            running = false;
+            clearInterval(timer);
+            clearInterval(speedTimer);
 
-  /* ================= 配置检测：逐链接延迟 + 测速 ================= */
-  let detectStop = false, detectRunning = false;
-  const SAMPLE_BYTES = 8 * 1024 * 1024, SAMPLE_MS = 8000, CONC = 4;
+            abortControllers.forEach(c => {
+                try { c.abort(); } catch (e) {}
+            });
+            abortControllers = [];
 
-  async function probeOne(item) {
-    const ctrl = new AbortController();
-    const tm = setTimeout(() => ctrl.abort(), 15000);
-    const t0 = performance.now();
-    let reader = null;
-    try {
-      const res = await fetch(cacheBust(item.url), {
-        method: 'GET', cache: 'no-store', mode: 'cors', credentials: 'omit',
-        redirect: 'follow', signal: ctrl.signal
-      });
-      const lat = Math.round(performance.now() - t0);
-      if (!res.ok) {
-        clearTimeout(tm);
-        return { state: 'bad', msg: 'HTTP ' + res.status, lat: lat };
-      }
-      // 上传类地址：只测连通性（首页通常不大）
-      if (item.type === 'upload' || !res.body) {
-        clearTimeout(tm);
-        const b = await res.blob();
-        return { state: 'warn', msg: '可达(上传地址)', lat: lat, speed: fmtSpeed(b.size / Math.max((performance.now() - t0) / 1000, 1e-3)), bytes: b.size };
-      }
-      reader = res.body.getReader();
-      let bytes = 0; const t1 = performance.now();
-      for (;;) {
-        const r = await reader.read();
-        if (r.done) break;
-        bytes += r.value.length;
-        const el = performance.now() - t1;
-        if (bytes >= SAMPLE_BYTES || el >= SAMPLE_MS) break;
-      }
-      const secs = (performance.now() - t1) / 1000;
-      try { await reader.cancel(); } catch (e) {}
-      clearTimeout(tm);
-      return { state: 'ok', lat, speed: fmtSpeed(bytes / Math.max(secs, 1e-3)), bytes, secs: secs.toFixed(1) };
-    } catch (e) {
-      clearTimeout(tm);
-      if (e.name === 'AbortError') return { state: 'bad', msg: '超时(>15s)' };
-      // 上传地址再用 no-cors 探测连通性
-      if (item.type === 'upload') {
-        const ms = await pingOnce(item.url, 6000);
-        if (ms >= 0) return { state: 'warn', msg: '可达(跨域不可读)', lat: ms };
-      }
-      return { state: 'bad', msg: '跨域/不可达' };
-    }
-  }
+            log('测试已停止', 'ok');
+            log('总计下载: ' + formatSize(totalSize), 'ok');
+        }
 
-  async function runDetect(list) {
-    if (detectRunning) return;
-    detectRunning = true; detectStop = false;
-    $('btnDetect').disabled = true; $('btnDetectView').disabled = true;
-    $('btnDetectStop').disabled = false;
-    let done = 0, ok = 0, bad = 0, warn = 0;
-    const total = list.length;
-    const info = $('detectInfo'), bar = $('detectBar');
-
-    async function worker(queue) {
-      while (queue.length) {
-        if (detectStop) return;
-        const it = queue.shift();
-        detectResults[it.url] = { state: 'run' };
-        updateRow(it.url);
-        const r = await probeOne(it);
-        detectResults[it.url] = r;
-        done++;
-        if (r.state === 'ok') ok++; else if (r.state === 'warn') warn++; else bad++;
-        updateRow(it.url);
-        bar.style.width = (done / total * 100).toFixed(1) + '%';
-        info.textContent = '进度 ' + done + '/' + total + ' · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad;
-      }
-    }
-    const queue = list.slice();
-    await Promise.all(Array.from({ length: Math.min(CONC, total) }, () => worker(queue)));
-    LS.set('tk_detect', detectResults);
-    detectRunning = false;
-    $('btnDetect').disabled = false; $('btnDetectView').disabled = false;
-    $('btnDetectStop').disabled = true;
-    info.textContent = detectStop ? ('已停止 · 已测 ' + done + '/' + total + ' · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad)
-                                  : ('检测完成 · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad);
-  }
-  function updateRow(url) {
-    // 仅更新当前页存在的行（筛选状态下可能不在）
-    const row = $('modalBody').querySelector('.g-item[data-url="' + (window.CSS && CSS.escape ? CSS.escape(url) : url.replace(/"/g, '\\"')) + '"]');
-    if (!row) return;
-    const r = detectResults[url];
-    const box = row.querySelector('.g-result');
-    if (!r) { box.innerHTML = '<span style="color:var(--muted)">未检测</span>'; return; }
-    if (r.state === 'run') box.innerHTML = '<span class="r-run">检测中…</span>';
-    else if (r.state === 'ok') box.innerHTML = '<span class="r-ok">✓ ' + r.lat + 'ms · ' + r.speed + '</span>';
-    else if (r.state === 'warn') box.innerHTML = '<span class="r-warn">' + esc(r.msg) + ' · ' + r.lat + 'ms</span>';
-    else box.innerHTML = '<span class="r-bad">' + esc(r.msg) + (r.lat != null ? ' · ' + r.lat + 'ms' : '') + '</span>';
-  }
-  $('btnDetect').addEventListener('click', () => runDetect(ALL()));
-  $('btnDetectView').addEventListener('click', () => {
-    const kw = $('searchInput').value.trim().toLowerCase();
-    const list = ALL().filter(it => !kw || it.name.toLowerCase().includes(kw) || it.url.toLowerCase().includes(kw) || it.group.toLowerCase().includes(kw));
-    if (!list.length) { alert('当前筛选结果为空'); return; }
-    runDetect(list);
-  });
-  $('btnDetectStop').addEventListener('click', () => { detectStop = true; });
-  $('btnCopyResult').addEventListener('click', () => {
-    const lines = ['流量消耗器 地址检测结果  ' + new Date().toLocaleString()];
-    ALL().forEach(it => {
-      const r = detectResults[it.url];
-      if (!r) return;
-      if (r.state === 'ok') lines.push('[正常] ' + it.group + ' / ' + it.name + ' | ' + r.lat + 'ms | ' + r.speed + ' | ' + it.url);
-      else if (r.state === 'warn') lines.push('[受限] ' + it.group + ' / ' + it.name + ' | ' + r.msg + ' | ' + (r.lat || '-') + 'ms | ' + it.url);
-      else lines.push('[失败] ' + it.group + ' / ' + it.name + ' | ' + r.msg + ' | ' + it.url);
-    });
-    if (lines.length === 1) { alert('暂无可复制的检测结果，请先执行检测'); return; }
-    const txt = lines.join('\n');
-    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => alert('检测结果已复制（' + (lines.length - 1) + ' 条）'));
-    else { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('检测结果已复制'); }
-  });
-
-  resetStats();
-})();
-
-</script>
+        btnStart.addEventListener('click', startTest);
+        btnStop.addEventListener('click', stopTest);
+    </script>
 </body>
 </html>
