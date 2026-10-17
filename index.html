@@ -190,7 +190,7 @@ select.form-control{appearance:none}
         <label class="form-label">线程（1–32）</label>
         <div class="spinner">
           <button class="btn" id="thMinus">−</button>
-          <input type="number" class="form-control" id="thread" min="1" max="32" value="4">
+          <input type="number" class="form-control" id="thread" min="1" max="32" value="8">
           <button class="btn" id="thPlus">+</button>
         </div>
       </div>
@@ -198,7 +198,7 @@ select.form-control{appearance:none}
         <label class="switch">
           <input type="checkbox" id="keepAlive">
           <span class="track"></span>
-          <span>保持后台运行（移动端静音保活 + 屏幕常亮）</span>
+          <span>保持后台运行</span>
         </label>
       </div>
       <button class="btn btn-primary btn-block" id="startBtn">开始</button>
@@ -256,7 +256,7 @@ select.form-control{appearance:none}
     <div><div class="m-title">地址配置与检测</div><div class="m-sub" id="mSub">共 0 条</div></div>
   </div>
   <div class="search-row">
-    <input class="form-control" id="searchInput" placeholder="搜索名称 / 地址 / 分组（如 腾讯、cloudflare、apk）">
+    <input class="form-control" id="searchInput" placeholder="搜索名称 / 地址 / 分组（如 腾讯、cloudflare）">
     <button class="btn btn-primary" id="btnAdd"><span>＋</span> 自定义</button>
     <button class="btn" id="btnRestore">恢复隐藏</button>
   </div>
@@ -286,7 +286,6 @@ select.form-control{appearance:none}
 <audio id="keepAudio" loop style="display:none"></audio>
 
 <script>
-/* ================= 地址数据（161 条 = 原项目 152 + 自定义 下载 9（已并入「常用推荐」）；已按 2026-10-15 检测结果移除失败/受限链接 71 条） ================= */
 const DEFAULT_GROUPS = [
 {
 "name": "常用推荐",
