@@ -145,7 +145,7 @@ select.form-control{appearance:none}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>
       </span>
       <span class="brand-title">流量消耗器</span>
-      <span class="brand-ver" id="brandVer">v2.0</span>
+      <span class="brand-ver" id="brandVer">v2.1</span>
     </div>
     <button class="icon-btn" id="openConfig" title="地址配置 / 检测">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
@@ -246,7 +246,7 @@ select.form-control{appearance:none}
       <div class="iprow"><span>YouTube 连通性</span><span class="v" id="layyt">- ms</span></div>
     </div>
   </div>
-  <div class="footer-tip">长按左上角「流量消耗器 / v2.0」区域进入伪熄屏，双击退出</div>
+  <div class="footer-tip">长按左上角「流量消耗器 / v2.1」区域进入伪熄屏，双击退出</div>
 </div>
 
 <!-- ===== 配置 / 检测 页面 ===== -->
@@ -321,39 +321,39 @@ const DEFAULT_GROUPS = [
 "url": "https://speed.cloudflare.com/__down?bytes=1073741824"
 },
 {
-"name": "自定义下载·lf5-j1gamecdn-cn.dailygn.com",
+"name": "dailygncdn",
 "url": "https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4"
 },
 {
-"name": "自定义下载·issuepcdn.baidupcs.com",
+"name": "baidupcscdn1",
 "url": "https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe"
 },
 {
-"name": "自定义下载·wppkg.baidupcs.com",
+"name": "baidupcscdn2",
 "url": "https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk"
 },
 {
-"name": "自定义下载·static-d.iqiyi.com",
+"name": "iqiyicdn",
 "url": "https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg"
 },
 {
-"name": "自定义下载·gw.alicdn.com#1",
+"name": "alicdn1",
 "url": "https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg"
 },
 {
-"name": "自定义下载·img.alicdn.com",
+"name": "alicdn2",
 "url": "https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png"
 },
 {
-"name": "自定义下载·gw.alicdn.com#2",
+"name": "alicdn3",
 "url": "https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png"
 },
 {
-"name": "自定义下载·cloud.video.taobao.com",
+"name": "taobao",
 "url": "https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4"
 },
 {
-"name": "自定义下载·lf9-static.bytednsdoc.com",
+"name": "bytednsdoc",
 "url": "https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4"
 }
 ]
@@ -1038,7 +1038,7 @@ const DEFAULT_GROUPS = [
 </script>
 <script>
 /* =====================================================================
- * 流量消耗器 v2.0  单文件应用逻辑
+ * 流量消耗器 v2.1  单文件应用逻辑
  * 能力：多线程流式下载 / 首块探测 / 跨域提示 / 流量统计与上限 /
  *       速率+延迟滚动图表 / 国内外IP轮询 / 四目标延迟 /
  *       后台保活 / 标题栏流量 / 深浅色 / 移动端 /
@@ -1051,9 +1051,20 @@ const DEFAULT_GROUPS = [
     get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   };
-  function getCookie(n) { const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : ''; }
-  function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function hostOf(u) { try { return new URL(u).host; } catch (e) { return u; } }
+  function getCookie(n) {
+    try {
+      const m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    } catch (e) { return ''; }
+  }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function validHttpUrl(raw) {
+    try {
+      const u = new URL(String(raw));
+      return (u.protocol === 'http:' || u.protocol === 'https:') && !!u.hostname && !u.username && !u.password;
+    } catch (e) { return false; }
+  }
+  function hostOf(u) { try { return new URL(u).host; } catch (e) { return String(u || ''); } }
   function fmtSize(n) {
     const u = ['B', 'KB', 'MB', 'GB', 'TB']; let i = 0;
     while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
@@ -1069,9 +1080,15 @@ const DEFAULT_GROUPS = [
   }
 
   /* ================= 地址数据状态 ================= */
-  let customLinks = LS.get('tk_custom', []);           // [{name,url,type}]
-  let hiddenUrls = LS.get('tk_hidden', []);            // 被隐藏的默认地址
-  let detectResults = LS.get('tk_detect', {});         // {url: result}
+  const storedCustomLinks = LS.get('tk_custom', []);
+  let customLinks = (Array.isArray(storedCustomLinks) ? storedCustomLinks : [])
+    .filter(it => it && typeof it.name === 'string' && typeof it.url === 'string' && validHttpUrl(it.url))
+    .map(it => ({ name: it.name.slice(0, 160), url: it.url, type: 'download' })); // [{name,url,type}]
+  const storedHiddenUrls = LS.get('tk_hidden', []);
+  let hiddenUrls = Array.isArray(storedHiddenUrls) ? storedHiddenUrls.filter(u => typeof u === 'string') : [];
+  const storedDetectResults = LS.get('tk_detect', {});
+  let detectResults = storedDetectResults && typeof storedDetectResults === 'object' && !Array.isArray(storedDetectResults)
+    ? storedDetectResults : {}; // {url: result}; values are escaped before display
   function buildGroups() {
     const groups = DEFAULT_GROUPS.map(g => ({
       name: g.name,
@@ -1091,23 +1108,30 @@ const DEFAULT_GROUPS = [
 
   /* ================= 当前地址 ================= */
   let current = LS.get('tk_current', null);
-  // 旧 cookie 迁移
-  (function migrate() {
-    if (!current) {
-      const diy = getCookie('diy');
-      if (diy) { current = { name: '自定义', url: diy }; }
-      else {
-        const first = DEFAULT_GROUPS[0].items[0];
-        current = { name: first.name, url: first.url };
-      }
+  if (!current || typeof current.name !== 'string' || !validHttpUrl(current.url)) current = null;
+  // 旧 cookie 迁移；若旧数据已失效，则选择第一条当前可用地址。
+  if (!current) {
+    const diy = getCookie('diy');
+    if (validHttpUrl(diy)) current = { name: '自定义', url: diy };
+    else {
+      const first = buildGroups()[0]?.items[0] || null;
+      current = first ? { name: first.name, url: first.url } : null;
     }
-  })();
+  }
   function setCurrent(item) {
-    current = { name: item.name, url: item.url };
+    if (!item || !validHttpUrl(item.url)) {
+      current = null;
+      LS.set('tk_current', null);
+      $('curName').textContent = '未选择地址';
+      $('curUrl').textContent = '';
+      $('diyLink').value = '';
+      return;
+    }
+    current = { name: String(item.name || hostOf(item.url)).slice(0, 160), url: item.url };
     LS.set('tk_current', current);
-    $('curName').textContent = item.name;
-    $('curUrl').textContent = item.url;
-    if ($('diyLink').value !== item.url) $('diyLink').value = item.url;
+    $('curName').textContent = current.name;
+    $('curUrl').textContent = current.url;
+    if ($('diyLink').value !== current.url) $('diyLink').value = current.url;
   }
   setCurrent(current);
 
@@ -1118,7 +1142,8 @@ const DEFAULT_GROUPS = [
     $('icoSun').style.display = t === 'dark' ? '' : 'none';
     LS.set('tk_theme', t);
   }
-  applyTheme(LS.get('tk_theme', 'light'));
+  const savedTheme = LS.get('tk_theme', 'light');
+  applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
   $('themeBtn').addEventListener('click', () => {
     applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
     if (chart) { chart.dispose(); chart = null; initChart(); }
@@ -1134,20 +1159,18 @@ const DEFAULT_GROUPS = [
     threadEl.value = v;
     LS.set('tk_thread', v);
   }
+  clampThread();
   threadEl.addEventListener('change', clampThread);
   $('thMinus').addEventListener('click', () => { threadEl.value = Math.max(1, (+threadEl.value || 1) - 1); clampThread(); });
   $('thPlus').addEventListener('click', () => { threadEl.value = Math.min(32, (+threadEl.value || 1) + 1); clampThread(); });
   $('diyLink').addEventListener('input', function () {
     const u = this.value.trim();
-    if (u && /^https?:\/\//i.test(u)) {
-      setCurrent({ name: '自定义·' + hostOf(u), url: u });
-      LS.set('tk_current', current);
-    }
+    if (validHttpUrl(u)) setCurrent({ name: '自定义·' + hostOf(u), url: u });
   });
 
   /* ================= 下载引擎 ================= */
   let running = false, totalBytes = 0, startTs = 0, maxBytes = 0;
-  let winBytes = 0, lastTick = 0, firstBlockMs = null, corsNotified = 0;
+  let winBytes = 0, lastTick = 0, firstBlockMs = null, corsNotified = 0, lastDownloadError = '';
   let workers = [];
   const startBtn = $('startBtn');
   const docTitle = '流量消耗器';
@@ -1155,18 +1178,43 @@ const DEFAULT_GROUPS = [
   // 流量上限（GB）
   const maxGB = LS.get('tk_maxgb', 0);
   function setMaxGb(gb) {
-    if (gb > 0) { LS.set('tk_maxgb', gb); maxBytes = gb * 1073741824; $('maxTag').textContent = ' / ' + fmtSize(maxBytes); }
-    else { LS.set('tk_maxgb', 0); maxBytes = 0; $('maxTag').textContent = ''; }
+    const value = Number(gb);
+    if (Number.isFinite(value) && value > 0 && value <= 1000000) {
+      LS.set('tk_maxgb', value);
+      maxBytes = value * 1073741824;
+      $('maxTag').textContent = ' / ' + fmtSize(maxBytes);
+    } else {
+      LS.set('tk_maxgb', 0);
+      maxBytes = 0;
+      $('maxTag').textContent = '';
+    }
   }
   setMaxGb(maxGB || 0);
   $('statTotal').addEventListener('click', () => {
     const v = prompt('请输入流量上限(GB)\n不填或填 0 为不设置上限', LS.get('tk_maxgb', 0) || '');
     if (v === null) return;
-    setMaxGb(parseFloat(v) || 0);
+    const n = String(v).trim() === '' ? 0 : Number(v);
+    if (!Number.isFinite(n) || n < 0 || n > 1000000) {
+      alert('请输入 0 到 1,000,000 之间的有效 GB 数值');
+      return;
+    }
+    setMaxGb(n);
   });
 
-  function setStatus(html, cls) {
-    $('statusLine').innerHTML = html ? ('<span class="' + (cls || '') + '">' + html + '</span>') : '';
+  function setStatus(message, cls) {
+    const el = $('statusLine');
+    el.textContent = '';
+    if (!message) return;
+    const span = document.createElement('span');
+    if (cls) span.className = cls;
+    span.textContent = String(message);
+    el.appendChild(span);
+  }
+
+  function showDownloadError(message) {
+    if (lastDownloadError === message) return;
+    lastDownloadError = message;
+    setStatus(message, 'bad');
   }
 
   async function downloadLoop(idx) {
@@ -1176,49 +1224,69 @@ const DEFAULT_GROUPS = [
       const tReq = performance.now();
       let reader = null;
       try {
+        if (!current || !validHttpUrl(current.url)) {
+          stopAll(false);
+          setStatus('测试地址无效，请重新选择地址。', 'bad');
+          return;
+        }
         const res = await fetch(cacheBust(current.url), {
           method: 'GET', cache: 'no-store', mode: 'cors',
           credentials: 'omit', redirect: 'follow', signal: ctrl.signal
         });
-        if (!res.ok) { await new Promise(r => setTimeout(r, 800)); continue; }
-        if (!res.body || !res.body.getReader) {
-          const b = await res.blob();
-          totalBytes += b.size; winBytes += b.size;
-          if (firstBlockMs === null) firstBlockMs = performance.now() - tReq;
+        if (!res.ok) {
+          showDownloadError('HTTP ' + res.status + '：地址暂不可用，正在重试…');
+          try { if (res.body) await res.body.cancel(); } catch (e) {}
+          await new Promise(r => setTimeout(r, 800));
           continue;
+        }
+        // 避免在不支持流式读取的浏览器里将大型文件整体载入内存。
+        if (!res.body || typeof res.body.getReader !== 'function') {
+          try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) {}
+          stopAll(false);
+          setStatus('当前浏览器不支持流式读取，已停止以避免将整个文件载入内存。', 'bad');
+          return;
         }
         reader = res.body.getReader();
         while (running) {
           const r = await reader.read();
           if (r.done) break;
           const n = r.value ? r.value.length : 0;
-          totalBytes += n; winBytes += n;
+          totalBytes += n;
+          winBytes += n;
           if (firstBlockMs === null) {
             firstBlockMs = performance.now() - tReq;
+            lastDownloadError = '';
             setStatus('线程已连接 · 首块延迟 ' + firstBlockMs.toFixed(0) + ' ms · 持续下载中…', 'ok');
           }
-          if (maxBytes > 0 && totalBytes >= maxBytes) { stopAll(true); break; }
+          if (maxBytes > 0 && totalBytes >= maxBytes) {
+            stopAll(true);
+            break;
+          }
         }
       } catch (e) {
-        if (e.name === 'AbortError') return;
-        // 跨域 / 网络错误
+        if (e && e.name === 'AbortError') return;
+        // fetch 无法区分 CORS 阻止与一般网络错误，因此明确提示两种可能。
         corsNotified++;
         if (corsNotified === 1) {
-          setStatus('⚠ 该地址无法跨域读取（浏览器安全限制）或网络不可达：' + esc(current.url) + '。请更换支持 CORS 的地址，或在配置页检测。', 'bad');
+          showDownloadError('该地址无法跨域读取（CORS）或网络不可达：' + (current ? current.url : '') + '。请更换支持 CORS 的地址，或在配置页检测。');
         }
         await new Promise(r => setTimeout(r, 1000));
       } finally {
-        if (reader) try { reader.releaseLock(); } catch (e) {}
+        if (reader) {
+          try { await reader.cancel(); } catch (e) {}
+          try { reader.releaseLock(); } catch (e) {}
+        }
       }
     }
   }
 
   function startAll() {
-    if (!current.url || !/^https?:\/\//i.test(current.url)) { alert('请先填写或选择有效的测试地址'); return; }
+    if (!current || !validHttpUrl(current.url)) { alert('请先填写或选择有效的测试地址'); return; }
     clampThread();
     running = true;
-    totalBytes = 0; winBytes = 0; firstBlockMs = null; corsNotified = 0;
-    startTs = performance.now(); lastTick = performance.now();
+    totalBytes = 0; winBytes = 0; firstBlockMs = null; corsNotified = 0; lastDownloadError = '';
+    resetStats();
+    startTs = performance.now(); lastTick = startTs;
     startBtn.textContent = '停止';
     startBtn.className = 'btn btn-danger btn-block';
     setStatus('连接中…');
@@ -1230,6 +1298,15 @@ const DEFAULT_GROUPS = [
   }
   function stopAll(reached) {
     if (!running) return;
+    const now = performance.now();
+    const intervalSeconds = Math.max((now - lastTick) / 1000, 1e-3);
+    const elapsedSeconds = Math.max((now - startTs) / 1000, 1e-3);
+    const finalSpeed = winBytes / intervalSeconds;
+    $('vTotal').textContent = fmtSize(totalBytes);
+    $('vSpeed').textContent = fmtSpeed(finalSpeed);
+    $('vMbps').textContent = (finalSpeed * 8 / 1e6).toFixed(1) + ' Mbps';
+    $('vAvg').textContent = fmtSpeed(totalBytes / elapsedSeconds);
+    winBytes = 0;
     running = false;
     (workers || []).forEach(c => { try { c && c.abort(); } catch (e) {} });
     workers = [];
@@ -1237,9 +1314,14 @@ const DEFAULT_GROUPS = [
     startBtn.className = 'btn btn-primary btn-block';
     document.title = docTitle;
     if (reached) setStatus('已达到流量上限，自动停止。共消耗 ' + fmtSize(totalBytes), 'ok');
-    else if (totalBytes > 0) setStatus('已停止。共消耗 ' + fmtSize(totalBytes));
-    if (!$('keepAlive').checked) keepAliveOff();
-    releaseWakeLock();
+    else setStatus(totalBytes > 0 ? '已停止。共消耗 ' + fmtSize(totalBytes) : '已停止。尚未收到数据。');
+    if (!$('keepAlive').checked) {
+      keepAliveOff();
+      releaseWakeLock();
+    } else {
+      // 用户显式启用保活时，停止下载不应立即释放屏幕常亮锁。
+      keepAliveOn();
+    }
   }
   startBtn.addEventListener('click', () => running ? stopAll(false) : startAll());
 
@@ -1310,7 +1392,9 @@ const DEFAULT_GROUPS = [
     const tm = setTimeout(() => ctrl.abort(), timeoutMs || 5000);
     const t0 = performance.now();
     try {
-      await fetch(cacheBust(url), { mode: 'no-cors', cache: 'no-store', credentials: 'omit', signal: ctrl.signal, redirect: 'follow' });
+      const res = await fetch(cacheBust(url), { mode: 'no-cors', cache: 'no-store', credentials: 'omit', signal: ctrl.signal, redirect: 'follow' });
+      // 不读取响应体；只将网络往返时间作为近似连通性指标。
+      try { if (res && res.body && res.body.cancel) await res.body.cancel(); } catch (e) {}
       return Math.round(performance.now() - t0);
     } catch (e) { return -1; } finally { clearTimeout(tm); }
   }
@@ -1335,28 +1419,30 @@ const DEFAULT_GROUPS = [
   /* ================= 出口 IP（国内 ipip.net / 全球 ipinfo.io 轮询） ================= */
   async function loadIpCn() {
     const el = $('ipcn');
+    const ctrl = new AbortController();
+    const tm = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 8000);
       const res = await fetch(cacheBust('https://myip.ipip.net/'), { cache: 'no-store', signal: ctrl.signal });
-      clearTimeout(tm);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const txt = (await res.text()).replace(/\s+/g, ' ').trim();
       el.textContent = txt || '解析失败'; el.style.color = 'var(--text)';
     } catch (e) {
       el.textContent = '获取失败（跨域限制）'; el.style.color = 'var(--bad)';
-    }
+    } finally { clearTimeout(tm); }
   }
   async function loadIpGb() {
     const el = $('ipgb');
+    const ctrl = new AbortController();
+    const tm = setTimeout(() => ctrl.abort(), 8000);
     try {
-      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 8000);
       const res = await fetch(cacheBust('https://ipinfo.io/json'), { cache: 'no-store', signal: ctrl.signal });
-      clearTimeout(tm);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
       const j = await res.json();
-      el.textContent = [j.ip, j.city, j.region, j.country, j.org].filter(Boolean).join(' · ');
+      el.textContent = [j.ip, j.city, j.region, j.country, j.org].filter(Boolean).join(' · ') || '解析失败';
       el.style.color = 'var(--text)';
     } catch (e) {
       el.textContent = '获取失败（跨域/限流）'; el.style.color = 'var(--bad)';
-    }
+    } finally { clearTimeout(tm); }
   }
   loadIpCn(); loadIpGb();
   let ipFlip = false;
@@ -1382,13 +1468,30 @@ const DEFAULT_GROUPS = [
     acquireWakeLock();
   }
   function keepAliveOff() { LS.set('tk_keep', false); audio.pause(); }
-  $('keepAlive').addEventListener('change', function () { this.checked ? keepAliveOn() : keepAliveOff(); });
+  $('keepAlive').addEventListener('change', function () {
+    if (this.checked) keepAliveOn();
+    else {
+      keepAliveOff();
+      if (!running) releaseWakeLock();
+    }
+  });
 
-  let wakeLock = null;
+  let wakeLock = null, wakeLockRequest = null;
   async function acquireWakeLock() {
-    try { if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch (e) {}
+    if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+    if (wakeLock && !wakeLock.released) return;
+    if (wakeLockRequest) return wakeLockRequest;
+    wakeLockRequest = navigator.wakeLock.request('screen').then(lock => {
+      wakeLock = lock;
+      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+    }).catch(() => {}).finally(() => { wakeLockRequest = null; });
+    return wakeLockRequest;
   }
-  function releaseWakeLock() { try { wakeLock && wakeLock.release(); } catch (e) {} wakeLock = null; }
+  function releaseWakeLock() {
+    const lock = wakeLock;
+    wakeLock = null;
+    if (lock) { try { lock.release(); } catch (e) {} }
+  }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && (running || $('keepAlive').checked)) acquireWakeLock();
   });
@@ -1438,8 +1541,22 @@ const DEFAULT_GROUPS = [
     tapClock = setTimeout(() => { offClock.textContent = ''; }, 1600);
   }
   off.addEventListener('click', offTap);
-  off.addEventListener('touchend', e => { e.preventDefault(); offTap(); }, { passive: false });
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && off.classList.contains('open')) exitOff(); });
+
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      try { await navigator.clipboard.writeText(String(text)); return true; } catch (e) {}
+    }
+    const ta = document.createElement('textarea');
+    ta.value = String(text);
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed'; ta.style.opacity = '0'; ta.style.pointerEvents = 'none';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove();
+    return ok;
+  }
 
   /* ================= 配置页：渲染 / 搜索 / 增删 / 设为当前 ================= */
   const modal = $('configModal');
@@ -1466,16 +1583,16 @@ const DEFAULT_GROUPS = [
     body.querySelectorAll('.g-head').forEach(h => h.addEventListener('click', () => h.parentElement.classList.toggle('collapsed')));
   }
   function itemRow(it, g) {
-    const active = current.url === it.url;
+    const active = !!current && current.url === it.url;
     const r = detectResults[it.url];
     let resHtml = '<span style="color:var(--muted)">未检测</span>';
-    if (r) {
+    if (r && typeof r === 'object') {
       if (r.state === 'run') resHtml = '<span class="r-run">检测中…</span>';
-      else if (r.state === 'ok') resHtml = '<span class="r-ok">✓ ' + r.lat + 'ms · ' + r.speed + '</span>';
-      else if (r.state === 'warn') resHtml = '<span class="r-warn">' + esc(r.msg) + ' · ' + r.lat + 'ms</span>';
+      else if (r.state === 'ok') resHtml = '<span class="r-ok">✓ ' + esc(r.lat) + 'ms · ' + esc(r.speed) + '</span>';
+      else if (r.state === 'warn') resHtml = '<span class="r-warn">' + esc(r.msg) + ' · ' + esc(r.lat) + 'ms</span>';
       else if (r.state === 'bad') resHtml = '<span class="r-bad">' + esc(r.msg) + '</span>';
     }
-    return '<div class="g-item' + (active ? ' active' : '') + '" data-url="' + esc(it.url) + '">' +
+    return '<div class="g-item' + (active ? ' active' : '') + '" data-url="' + esc(it.url) + '" data-name="' + esc(it.name) + '" data-group="' + esc(g.name) + '" data-custom="' + (!!it.custom) + '">' +
       '<div class="g-main"><div class="g-name">' + esc(it.name) + (active ? ' <span class="tag">当前</span>' : '') +
       (g.type === 'upload' ? ' <span class="tag up">上传</span>' : '') + '</div>' +
       '<div class="g-url">' + esc(it.url) + '</div></div>' +
@@ -1494,15 +1611,18 @@ const DEFAULT_GROUPS = [
       if (!row) return;
       const url = row.getAttribute('data-url');
       if (!btn) return;
-      const item = ALL().find(x => x.url === url);
+      const item = ALL().find(x => x.url === url && x.name === row.dataset.name && x.group === row.dataset.group &&
+        (!!x.custom) === (row.dataset.custom === 'true'));
       if (!item) return;
       if (btn.dataset.act === 'use') {
         setCurrent(item);
         $('diyLink').value = item.url;
         renderConfig();
       } else if (btn.dataset.act === 'copy') {
-        navigator.clipboard ? navigator.clipboard.writeText(url).catch(() => {}) : null;
-        btn.textContent = '✓'; setTimeout(() => btn.textContent = '⧉', 900);
+        copyText(url).then(ok => {
+          if (ok) { btn.textContent = '✓'; setTimeout(() => { if (btn.isConnected) btn.textContent = '⧉'; }, 900); }
+          else alert('复制失败，请手动复制地址。');
+        });
       } else if (btn.dataset.act === 'del') {
         if (item.custom) {
           customLinks = customLinks.filter(x => x.url !== url);
@@ -1511,9 +1631,9 @@ const DEFAULT_GROUPS = [
           if (!hiddenUrls.includes(url)) hiddenUrls.push(url);
           LS.set('tk_hidden', hiddenUrls);
         }
-        if (current.url === url) {
-          const f = DEFAULT_GROUPS[0].items.find(x => !hiddenUrls.includes(x.url));
-          setCurrent(f); $('diyLink').value = f.url;
+        if (current && current.url === url) {
+          const next = ALL()[0] || null;
+          setCurrent(next);
         }
         renderConfig();
       }
@@ -1523,6 +1643,9 @@ const DEFAULT_GROUPS = [
   $('openConfig').addEventListener('click', () => { modal.classList.add('open'); renderConfig(); });
   $('btnPick').addEventListener('click', () => { modal.classList.add('open'); renderConfig(); });
   $('closeConfig').addEventListener('click', () => modal.classList.remove('open'));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('open')) modal.classList.remove('open');
+  });
   $('btnRestore').addEventListener('click', () => { hiddenUrls = []; LS.set('tk_hidden', hiddenUrls); renderConfig(); });
 
   // 自定义添加
@@ -1531,7 +1654,7 @@ const DEFAULT_GROUPS = [
   $('btnAddOk').addEventListener('click', () => {
     const url = $('addUrl').value.trim();
     let name = $('addName').value.trim();
-    if (!/^https?:\/\//i.test(url)) { alert('请输入合法的 http/https 地址'); return; }
+    if (!validHttpUrl(url)) { alert('请输入合法的 http/https 地址（不含用户名或密码）'); return; }
     if (!name) name = '自定义·' + hostOf(url);
     if (customLinks.some(x => x.url === url)) { alert('该自定义地址已存在'); return; }
     customLinks.push({ name, url, type: 'download' });
@@ -1542,10 +1665,12 @@ const DEFAULT_GROUPS = [
 
   /* ================= 配置检测：逐链接延迟 + 测速 ================= */
   let detectStop = false, detectRunning = false;
+  const detectControllers = new Set();
   const SAMPLE_BYTES = 8 * 1024 * 1024, SAMPLE_MS = 8000, CONC = 4;
 
   async function probeOne(item) {
     const ctrl = new AbortController();
+    detectControllers.add(ctrl);
     const tm = setTimeout(() => ctrl.abort(), 15000);
     const t0 = performance.now();
     let reader = null;
@@ -1556,84 +1681,103 @@ const DEFAULT_GROUPS = [
       });
       const lat = Math.round(performance.now() - t0);
       if (!res.ok) {
-        clearTimeout(tm);
-        return { state: 'bad', msg: 'HTTP ' + res.status, lat: lat };
+        try { if (res.body) await res.body.cancel(); } catch (e) {}
+        return { state: 'bad', msg: 'HTTP ' + res.status, lat };
       }
-      // 上传类地址：只测连通性（首页通常不大）
-      if (item.type === 'upload' || !res.body) {
-        clearTimeout(tm);
-        const b = await res.blob();
-        return { state: 'warn', msg: '可达(上传地址)', lat: lat, speed: fmtSpeed(b.size / Math.max((performance.now() - t0) / 1000, 1e-3)), bytes: b.size };
+      // 只测连通性的地址不读取完整响应体，避免意外下载大文件。
+      if (item.type === 'upload') {
+        try { if (res.body && res.body.cancel) await res.body.cancel(); } catch (e) {}
+        return { state: 'warn', msg: '可达(上传地址，仅测连通性)', lat };
+      }
+      if (!res.body || typeof res.body.getReader !== 'function') {
+        return { state: 'warn', msg: '响应不可流式读取，未测速', lat };
       }
       reader = res.body.getReader();
-      let bytes = 0; const t1 = performance.now();
+      let bytes = 0;
+      const t1 = performance.now();
       for (;;) {
         const r = await reader.read();
         if (r.done) break;
-        bytes += r.value.length;
-        const el = performance.now() - t1;
-        if (bytes >= SAMPLE_BYTES || el >= SAMPLE_MS) break;
+        bytes += r.value ? r.value.length : 0;
+        const elapsed = performance.now() - t1;
+        if (bytes >= SAMPLE_BYTES || elapsed >= SAMPLE_MS) break;
       }
       const secs = (performance.now() - t1) / 1000;
-      try { await reader.cancel(); } catch (e) {}
-      clearTimeout(tm);
       return { state: 'ok', lat, speed: fmtSpeed(bytes / Math.max(secs, 1e-3)), bytes, secs: secs.toFixed(1) };
     } catch (e) {
-      clearTimeout(tm);
-      if (e.name === 'AbortError') return { state: 'bad', msg: '超时(>15s)' };
-      // 上传地址再用 no-cors 探测连通性
-      if (item.type === 'upload') {
+      if (detectStop || (e && e.name === 'AbortError' && ctrl.signal.aborted)) {
+        return { state: 'bad', msg: detectStop ? '已停止' : '超时(>15s)' };
+      }
+      // 跨域不可读时，no-cors 只能粗略确认网络是否有响应。
+      if (item.type === 'upload' && !detectStop) {
         const ms = await pingOnce(item.url, 6000);
         if (ms >= 0) return { state: 'warn', msg: '可达(跨域不可读)', lat: ms };
       }
       return { state: 'bad', msg: '跨域/不可达' };
+    } finally {
+      clearTimeout(tm);
+      detectControllers.delete(ctrl);
+      if (reader) {
+        try { await reader.cancel(); } catch (e) {}
+        try { reader.releaseLock(); } catch (e) {}
+      }
     }
   }
 
   async function runDetect(list) {
     if (detectRunning) return;
+    if (!list || !list.length) { $('detectInfo').textContent = '没有可检测的地址'; return; }
     detectRunning = true; detectStop = false;
     $('btnDetect').disabled = true; $('btnDetectView').disabled = true;
     $('btnDetectStop').disabled = false;
     let done = 0, ok = 0, bad = 0, warn = 0;
-    const total = list.length;
     const info = $('detectInfo'), bar = $('detectBar');
 
     async function worker(queue) {
-      while (queue.length) {
-        if (detectStop) return;
+      while (queue.length && !detectStop) {
         const it = queue.shift();
         detectResults[it.url] = { state: 'run' };
         updateRow(it.url);
         const r = await probeOne(it);
+        if (detectStop) {
+          delete detectResults[it.url];
+          updateRow(it.url);
+          return;
+        }
         detectResults[it.url] = r;
         done++;
         if (r.state === 'ok') ok++; else if (r.state === 'warn') warn++; else bad++;
         updateRow(it.url);
-        bar.style.width = (done / total * 100).toFixed(1) + '%';
-        info.textContent = '进度 ' + done + '/' + total + ' · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad;
+        bar.style.width = (done / totalUnique * 100).toFixed(1) + '%';
+        info.textContent = '进度 ' + done + '/' + totalUnique + '（去重） · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad;
       }
     }
-    const queue = list.slice();
-    await Promise.all(Array.from({ length: Math.min(CONC, total) }, () => worker(queue)));
+    // 相同 URL 可能出现在多个分组；由于检测结果按 URL 保存，只检测一次即可。
+    const unique = new Map();
+    list.forEach(it => { if (!unique.has(it.url)) unique.set(it.url, it); });
+    const queue = Array.from(unique.values());
+    const totalUnique = queue.length;
+    await Promise.all(Array.from({ length: Math.min(CONC, totalUnique) }, () => worker(queue)));
     LS.set('tk_detect', detectResults);
     detectRunning = false;
     $('btnDetect').disabled = false; $('btnDetectView').disabled = false;
     $('btnDetectStop').disabled = true;
-    info.textContent = detectStop ? ('已停止 · 已测 ' + done + '/' + total + ' · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad)
-                                  : ('检测完成 · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad);
+    info.textContent = detectStop ? ('已停止 · 已测 ' + done + '/' + totalUnique + ' · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad)
+                                  : ('检测完成（' + totalUnique + ' 个唯一地址） · 正常 ' + ok + ' · 受限 ' + warn + ' · 失败 ' + bad);
   }
   function updateRow(url) {
-    // 仅更新当前页存在的行（筛选状态下可能不在）
-    const row = $('modalBody').querySelector('.g-item[data-url="' + (window.CSS && CSS.escape ? CSS.escape(url) : url.replace(/"/g, '\\"')) + '"]');
-    if (!row) return;
+    // URL 可能在不同分组重复出现；同步更新所有匹配行，且不拼接 CSS 选择器。
+    const rows = Array.from($('modalBody').querySelectorAll('.g-item')).filter(el => el.dataset.url === url);
+    if (!rows.length) return;
     const r = detectResults[url];
-    const box = row.querySelector('.g-result');
-    if (!r) { box.innerHTML = '<span style="color:var(--muted)">未检测</span>'; return; }
-    if (r.state === 'run') box.innerHTML = '<span class="r-run">检测中…</span>';
-    else if (r.state === 'ok') box.innerHTML = '<span class="r-ok">✓ ' + r.lat + 'ms · ' + r.speed + '</span>';
-    else if (r.state === 'warn') box.innerHTML = '<span class="r-warn">' + esc(r.msg) + ' · ' + r.lat + 'ms</span>';
-    else box.innerHTML = '<span class="r-bad">' + esc(r.msg) + (r.lat != null ? ' · ' + r.lat + 'ms' : '') + '</span>';
+    rows.forEach(row => {
+      const box = row.querySelector('.g-result');
+      if (!r) { box.innerHTML = '<span style="color:var(--muted)">未检测</span>'; return; }
+      if (r.state === 'run') box.innerHTML = '<span class="r-run">检测中…</span>';
+      else if (r.state === 'ok') box.innerHTML = '<span class="r-ok">✓ ' + esc(r.lat) + 'ms · ' + esc(r.speed) + '</span>';
+      else if (r.state === 'warn') box.innerHTML = '<span class="r-warn">' + esc(r.msg) + ' · ' + esc(r.lat) + 'ms</span>';
+      else box.innerHTML = '<span class="r-bad">' + esc(r.msg) + (r.lat != null ? ' · ' + esc(r.lat) + 'ms' : '') + '</span>';
+    });
   }
   $('btnDetect').addEventListener('click', () => runDetect(ALL()));
   $('btnDetectView').addEventListener('click', () => {
@@ -1642,7 +1786,10 @@ const DEFAULT_GROUPS = [
     if (!list.length) { alert('当前筛选结果为空'); return; }
     runDetect(list);
   });
-  $('btnDetectStop').addEventListener('click', () => { detectStop = true; });
+  $('btnDetectStop').addEventListener('click', () => {
+    detectStop = true;
+    detectControllers.forEach(ctrl => { try { ctrl.abort(); } catch (e) {} });
+  });
   $('btnCopyResult').addEventListener('click', () => {
     const lines = ['流量消耗器 地址检测结果  ' + new Date().toLocaleString()];
     ALL().forEach(it => {
@@ -1654,8 +1801,7 @@ const DEFAULT_GROUPS = [
     });
     if (lines.length === 1) { alert('暂无可复制的检测结果，请先执行检测'); return; }
     const txt = lines.join('\n');
-    if (navigator.clipboard) navigator.clipboard.writeText(txt).then(() => alert('检测结果已复制（' + (lines.length - 1) + ' 条）'));
-    else { const ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); alert('检测结果已复制'); }
+    copyText(txt).then(ok => alert(ok ? '检测结果已复制（' + (lines.length - 1) + ' 条）' : '复制失败，请检查浏览器剪贴板权限。'));
   });
 
   resetStats();
