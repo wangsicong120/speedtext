@@ -17,7 +17,7 @@
 | Axe 自动无障碍检查 | 两项目中分别扫描深浅主题的主页和节点弹窗，共 8 次，违规列表均为空 |
 | Workers 与独立静态前端构建 | 均成功；生产根页面为完整应用，不是旧入口跳转页 |
 | 部署 dry-run | 成功；仅 ASSETS 绑定，**没有上传或实际部署 Cloudflare** |
-| GitHub CI | 本地报告完成时尚未推送本轮提交；发布后核对 [Verify 工作流](https://github.com/wangsicong120/speedtext/actions/workflows/verify.yml)，不把上一版成功作为本轮结果 |
+| GitHub CI | Ubuntu 24.04 / Node.js 24.22.2 的 [Verify #3](https://github.com/wangsicong120/speedtext/actions/runs/42855468087) 已通过；应用代码提交 [982f2ed](https://github.com/wangsicong120/speedtext/commit/982f2ede2e34d50f9a8672862773fa8b4301d093) |
 
 ### 依赖审计覆盖
 
