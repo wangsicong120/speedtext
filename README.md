@@ -1,18 +1,88 @@
-# 流量消耗器 · Traffic Consumer
+# 流量消耗器 · Speedtext 3.0
 
-一个可部署在 Cloudflare Pages 上的轻量级静态网页工具，用于**监测网络连通性**、**展示 IP 信息**，并通过自定义链接触发**带宽流量消耗**，适合用于网络测试、边缘性能验证等场景。
+原生 JavaScript 前端 + Cloudflare Workers 只读 API，支持流式下载、流量预算、节点采样和手动网络查询。
 
----
+**下载由浏览器直接连接目标；后端不提供下载代理。** 页面初次打开不请求第三方服务，也不会自动开始下载。
 
-## ✨ 特性 Features
+## 功能与改进
 
-- 🌐 实时显示网站的 **网络连通性**
-- 📍 展示访问者的 **国内/国外 IP 地址信息**
-- 🧩 支持自定义请求链接，用于 **主动消耗流量**
-- 💡 页面完全静态，**无后端依赖**
+- 默认 **100 MiB / 60 秒**，先到即停；1–32 并发，首个数据块可读后再扩展连接。
+- 停止时取消下载、读取和退避重试；离线停止，恢复网络不自动重启。
+- 完整保留原版 **17 组、161 条节点、154 个唯一地址**；支持搜索、自定义、隐藏、撤销和恢复。
+- 节点检测按 URL 去重：4 并发，每条最多 8 MiB / 8 秒；开始前确认理论预算，随时可取消。
+- 本地 SVG 趋势图与可读数据表，不加载 ECharts/CDN 脚本；停止后可导出统计 JSON。
+- 深浅主题、手机布局、键盘操作、原生弹窗、错误聚焦和剪贴板失败后的手动复制。
+- 本站边缘信息与手动第三方 IP/连通性查询分开；保活和随机查询参数默认关闭。
+- HTTPS 地址校验、文本化显示外部数据、严格 CSP、同源只读 API，不使用 `eval` 或 HTML 拼接。
 
----
+## 快速开始
 
-![img](https://r2.wuxie.de/blog/20250509_f6c83351.jpg)
+需要 Node.js `^22.23.0`、`^24.22.0` 或 `^26.12.0`；建议使用 Node.js 24 LTS。依赖版本已锁定。
 
-![img](https://r2.wuxie.de/blog/20250509_240dad4a.jpg)
+```bash
+npm ci
+npm run dev:local
+```
+
+打开 `http://127.0.0.1:4173`。该模式不需要 Cloudflare 账号，不展示真实边缘 IP，也不信任用户伪造的转发头。
+
+使用 Cloudflare 的本地 Workers 开发环境：
+
+```bash
+npm run dev
+```
+
+默认地址为 `http://127.0.0.1:5173`，远程绑定已关闭。
+
+## 前后端分工
+
+```text
+frontend/               页面、主题、下载、节点、图表、网络查询
+backend/                Workers 路由、安全响应头、边缘客户端信息
+shared/limits.js        版本与公开默认限制
+scripts/                本地服务器、构建入口与源码/产物检查
+tests/unit/             单元测试
+tests/runtime/          生产构建的 workerd 运行测试
+tests/e2e/              桌面/手机浏览器及无障碍测试
+cloudflare.config.ts    Workers 与 ASSETS 配置
+```
+
+| API | 用途 |
+| --- | --- |
+| `GET /api/health` | 版本与健康状态 |
+| `GET /api/client` | 当前请求的 Cloudflare 边缘 IP/归属信息；本地模式返回空 IP |
+| `GET /api/config` | 公开配置和安全边界 |
+
+API 支持 `HEAD` 和同源 `OPTIONS`，不接受查询参数、写操作或跨站请求；不开放 CORS。不需要数据库、用户账号、API 密钥或下载代理。
+
+## 构建、验证与部署
+
+```bash
+npx --no-install playwright install chromium
+npm run verify
+```
+
+`verify` 依次执行源码检查、单测、生产 workerd 测试、桌面/手机 E2E、部署 dry-run；**不会上传或部署 Cloudflare**。
+
+| 命令 | 结果 |
+| --- | --- |
+| `npm run build` | `.cloudflare/output/v0/` 中的真实 Worker 和静态资源，并校验入口/绑定 |
+| `npm run build:static` | 独立前端 `dist/client/`；静态模式没有本站边缘 API |
+| `npm run deploy:check` | 构建并预览部署内容，不实际部署 |
+| `npm run deploy` | **实际部署**；需本人先完成 Cloudflare 授权并核对目标 |
+
+GitHub 工作流只执行验证，没有 Cloudflare 凭据或自动部署步骤。详见 [部署说明](docs/DEPLOYMENT.md)、[安全边界](docs/SECURITY.md) 和 [验证报告](docs/VALIDATION.md)。
+
+## 使用前必读
+
+1. 仅测试你有权使用的网络与资源，留意计费和流量套餐。更高并发不一定更快。
+2. 目标必须允许 CORS，页面不会绕过跨域限制；失效地址保留为历史节点，不承诺可用或免流。
+3. 统计是浏览器读取的响应体字节，可能已经被解压；不含协议开销。在途数据和浏览器后台调度会使实际流量超出设置预算，**不能作为计费硬上限**。
+4. 随机参数可能破坏签名链接，默认不追加。伪熄屏不是系统锁屏，常亮/静音保活不能保证后台持续运行。
+5. 节点和完整签名 URL 存于当前浏览器；不要在共享设备保存敏感链接。统计导出默认不含下载 URL，但自定义名称及“复制节点结果”仍可能包含敏感内容，分享前请检查。
+
+根 `index.html` 仅兼容旧静态入口并跳转到 `frontend/`。旧版 `main.js`、`js/`、`res/` 等暂保留，新版和生产构建均不引用它们。静态托管请优先发布 `dist/client/`，不要直接暴露整个工作目录。
+
+## 许可证
+
+[Apache-2.0](LICENSE)。
