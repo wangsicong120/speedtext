@@ -17,12 +17,15 @@
 | Axe 自动无障碍检查 | 两项目中分别扫描深浅主题的主页和节点弹窗，共 8 次，违规列表均为空 |
 | Workers 与独立静态前端构建 | 均成功；生产根页面为完整应用，不是旧入口跳转页 |
 | 部署 dry-run | 成功；仅 ASSETS 绑定，**没有上传或实际部署 Cloudflare** |
+| GitHub CI | Ubuntu 24.04 / Node.js 24.22.2 的 [Verify #1](https://github.com/wangsicong120/speedtext/actions/runs/42844369615) 已通过；应用代码提交 `a536eeb` |
 
 ### 依赖审计覆盖
 
-已成功执行 `npm audit --omit=optional --json --fetch-retries=2 --fetch-timeout=60000`，返回 **0 个已知漏洞**。这是排除可选依赖的结果，不代表完整依赖树或供应链没有风险。
+最初执行 `npm audit --omit=optional --json --fetch-retries=2 --fetch-timeout=60000`，返回 0 个已知漏洞；此前全量审计曾因 npm registry TLS 连接中断而未取得结果。
 
-随后两次不带 `--omit=optional` 的全量审计均因 npm registry TLS 连接中断而未取得结果，不能视为审计通过。网络恢复后应重新运行 `npm audit`；不会通过关闭 TLS 校验、换不可信源或自动升级依赖掩盖失败。
+网络恢复后，重新执行 **全量** `npm audit --json --fetch-retries=2 --fetch-timeout=60000`，成功返回 **0 个已知漏洞**，本次包含可选依赖，没有使用 `--omit=optional`。
+
+该结果仅代表验证时 npm advisory 数据库报告的已知漏洞，不证明依赖树或供应链没有风险。未关闭 TLS 校验、换用不可信源或自动升级依赖；锁定的依赖没有变化。
 
 ## 覆盖的关键行为
 
