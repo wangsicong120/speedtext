@@ -1,4 +1,4 @@
-import { DEFAULT_GROUPS } from './nodes.js';
+import { DEFAULT_GROUPS, RECOMMENDED_DOWNLOAD_URL } from './nodes.js';
 import { LIMITS } from '../../shared/limits.js';
 import { deduplicate, normalizeUrl, readStorage, writeStorage } from './utils.js';
 
@@ -20,7 +20,7 @@ export class NodeStore {
     this.custom = Array.isArray(custom) ? deduplicate(custom.slice(0, LIMITS.maxCustomLinks).map(sanitizeNode).filter(Boolean)) : [];
     const known = new Set(this.defaults.flatMap(group => group.items.map(item => item.url)));
     this.hidden = new Set(Array.isArray(hidden) ? hidden.filter(url => typeof url === 'string' && known.has(url)) : []);
-    this.current = sanitizeNode(read('tk_current', null)) || this.all()[0] || this.defaults[0]?.items[0];
+    this.current = sanitizeNode(read('tk_current', null)) || this.recommended();
     this.lastChange = null;
   }
 
@@ -41,6 +41,11 @@ export class NodeStore {
   }
 
   all(query = '') { return this.groups(query).flatMap(group => group.items.map(item => ({ ...item, group: group.name }))); }
+
+  recommended() {
+    const available = this.all();
+    return available.find(item => item.url === RECOMMENDED_DOWNLOAD_URL) || available[0] || this.defaults[0]?.items[0];
+  }
 
   select(item) {
     const node = sanitizeNode(item);

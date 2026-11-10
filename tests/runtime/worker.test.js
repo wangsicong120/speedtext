@@ -36,11 +36,13 @@ test('production build in the real workerd runtime', async t => {
   };
 
   await t.test('health and config APIs execute in workerd', async () => {
-    assert.deepEqual(await (await request('/api/health')).json(), { ok: true, version: '3.0.0' });
+    assert.deepEqual(await (await request('/api/health')).json(), { ok: true, version: '3.1.0' });
     const response = await request('/api/config');
     assert.equal(response.headers.get('cache-control'), 'no-store');
     const data = await response.json(); assert.equal(data.arbitraryProxy, false);
-    assert.equal(data.limits.defaultMaxBytes, 100 * 1048576);
+    assert.equal(data.limits.defaultMaxBytes, 0);
+    assert.equal(data.limits.defaultDurationSeconds, 0);
+    assert.equal(data.limits.networkRefreshMs, 30000);
   });
   await t.test('the ASSETS binding serves the actual app and its scripts', async () => {
     const response = await request('/');

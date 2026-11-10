@@ -2,23 +2,38 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
 import { FIXTURE_ORIGIN, FIXTURE_URL, acceptNextConfirm, configureDownload,
-  expectNoOverflow, installStreams, interceptHttps, openApp, openConfig } from './helpers.js';
+  expectNoOverflow, installNetworkFixtures, installStreams, interceptHttps, openApp, openConfig } from './helpers.js';
 
-test('safe defaults, zero third-party requests while idle, and no DOM clobbering', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
+  await installNetworkFixtures(page);
+  await page.route('https://**/*', route => route.abort());
+});
+
+test('limits are off, small monitoring is automatic, and downloads never auto-start or clobber the DOM', async ({ page }) => {
   const external = [], errors = [];
   page.on('request', request => { if (!request.url().startsWith('http://127.0.0.1:4173/')) external.push(request.url()); });
   page.on('pageerror', error => errors.push(error.message));
-  await page.route('https://**/*', route => route.abort());
+  await installStreams(page);
   await page.clock.install();
   const response = await openApp(page);
-  await expect(page.locator('#ipCurrent')).toContainText('本地开发模式');
-  await expect(page.locator('#maxMiB')).toHaveValue('100');
-  await expect(page.locator('#duration')).toHaveValue('60');
+  await expect(page.locator('#ipCurrent')).toHaveText('198.51.100.8');
+  await expect(page.locator('#ipSource')).toContainText('第三方');
+  await expect(page.locator('#autoNetwork')).toBeChecked();
+  await expect(page.locator('#maxEnabled')).not.toBeChecked();
+  await expect(page.locator('#durationEnabled')).not.toBeChecked();
+  await expect(page.locator('#maxMiB')).toHaveValue('0');
+  await expect(page.locator('#duration')).toHaveValue('0');
+  await expect(page.locator('#maxMiB')).toBeDisabled();
+  await expect(page.locator('#duration')).toBeDisabled();
+  await expect(page.locator('#curUrl')).toContainText('speed.cloudflare.com/__down');
   await expect(page.locator('#thread')).toHaveValue('4');
   await expect(page.locator('#cacheBust')).not.toBeChecked();
   await expect(page.locator('#keepAlive')).not.toBeChecked();
   await page.clock.fastForward(60000);
   expect(external).toEqual([]); expect(errors).toEqual([]);
+  expect(await page.evaluate(() => window.__networkRequests.filter(request => request.url.startsWith('https://')).length)).toBeGreaterThan(6);
+  expect(await page.evaluate(() => window.__fixtureRequests.length)).toBe(0);
+  await expect(page.locator('#runBadge')).toHaveText('未运行');
   const headers = response.headers();
   expect(headers['content-security-policy']).toContain("script-src 'self'");
   expect(headers['content-security-policy']).not.toContain('unsafe-');
@@ -26,6 +41,22 @@ test('safe defaults, zero third-party requests while idle, and no DOM clobbering
   expect(headers['referrer-policy']).toBe('no-referrer');
   expect(await page.evaluate(() => [...document.querySelectorAll('*')].filter(node => typeof node.nodeName !== 'string').length)).toBe(0);
   await expectNoOverflow(page);
+});
+
+test('limit switches persist explicitly and remembered values cannot enable a limit while switched off', async ({ page }) => {
+  await installStreams(page); await openApp(page);
+  await page.locator('#maxEnabled').check(); await page.locator('#maxMiB').fill('1');
+  await page.locator('#durationEnabled').check(); await page.locator('#duration').fill('1');
+  await page.locator('#thread').focus(); await page.reload();
+  await expect(page.locator('#maxEnabled')).toBeChecked(); await expect(page.locator('#durationEnabled')).toBeChecked();
+  await expect(page.locator('#maxMiB')).toHaveValue('1'); await expect(page.locator('#duration')).toHaveValue('1');
+  await page.locator('#maxEnabled').uncheck(); await page.locator('#durationEnabled').uncheck(); await page.reload();
+  await expect(page.locator('#maxMiB')).toBeDisabled(); await expect(page.locator('#duration')).toBeDisabled();
+  await configureDownload(page, { maxMiB: 0, duration: 0 });
+  acceptNextConfirm(page); await page.locator('#startBtn').click();
+  await expect.poll(async () => Number((await page.locator('#elapsed').textContent()).match(/\d+/)[0])).toBeGreaterThanOrEqual(2);
+  await expect(page.locator('#runBadge')).toHaveText('运行中');
+  await expect(page.locator('#vTotal')).toContainText('MiB'); await page.locator('#startBtn').click();
 });
 
 test('theme follows system settings and a manual choice survives reload', async ({ page }, testInfo) => {
@@ -127,6 +158,11 @@ test('HTTP and browser-enforced CORS errors are explicit and bounded', async ({ 
   expect(requests).toHaveLength(3); expect(errors).toEqual([]);
   await expect(page.locator('#vTotal')).toHaveText('0 B');
   await expect(page.locator('#runBadge')).toHaveText('未运行');
+  await expect(page.locator('#downloadRecovery')).toBeVisible();
+  await page.locator('#chooseReadable').click();
+  await expect(page.locator('#curUrl')).toContainText('speed.cloudflare.com/__down');
+  await expect(page.locator('#statusLine')).toContainText('不会自动下载');
+  expect(requests).toHaveLength(3);
 });
 
 test('custom node names remain literal text and persist without executing HTML', async ({ page }) => {
@@ -210,7 +246,9 @@ test('pseudo-screen-off preserves counting and exported stats omit signed URL pa
   expect(data.samples.every(sample => Number.isFinite(sample.speed))).toBe(true);
 });
 
-test('third-party IP and connectivity queries run only after clicking and use literal text', async ({ page }) => {
+test('IP and connectivity update automatically, pause when disabled, and keep external data literal', async ({ page }) => {
+  await page.addInitScript(() => { window.__networkFixtureMode = 'native'; });
+  await page.clock.install();
   const { requests, errors } = await interceptHttps(page, request => {
     const url = request.url;
     expect(Object.keys(request.headers).some(name => name.toLowerCase() === 'cookie')).toBe(false);
@@ -223,24 +261,59 @@ test('third-party IP and connectivity queries run only after clicking and use li
     }
     return { status: 500, headers: { 'Content-Type': 'image/x-icon' }, body: 'opaque HTTP response' };
   });
-  await openApp(page); expect(requests).toEqual([]);
-  await page.locator('#queryExternalIp').click();
+  await openApp(page);
   await expect(page.locator('#ipcn')).toContainText('203.0.113.8');
   await expect(page.locator('#ipgb')).toContainText('<img src=x onerror=alert(1)>');
-  await expect(page.locator('#ipgb img')).toHaveCount(0); expect(requests).toHaveLength(2);
-  await page.locator('#checkConnectivity').click();
+  await expect(page.locator('#ipgb img')).toHaveCount(0);
   await expect(page.locator('#networkStatus')).toContainText('跨域响应到达不等于 HTTP 成功');
   expect(requests).toHaveLength(6); expect(errors).toEqual([]);
+  await expect(page.locator('#ipCurrent')).toHaveText('198.51.100.8');
+  await expect(page.locator('#ipSource')).toContainText('第三方');
   for (const id of ['laycn', 'laygb', 'laygh', 'layyt']) await expect(page.locator('#' + id)).toContainText('响应到达');
+  await page.clock.fastForward(30000);
+  await expect.poll(() => requests.length).toBe(12);
+  await expect(page.locator('#refreshNetwork')).toHaveText('立即刷新');
+  await page.locator('#autoNetwork').uncheck(); await page.clock.fastForward(60000); expect(requests).toHaveLength(12);
+  await page.locator('#refreshNetwork').click(); await expect.poll(() => requests.length).toBe(18);
+  await expect(page.locator('#refreshNetwork')).toHaveText('立即刷新');
+  await page.reload(); await expect(page.locator('#autoNetwork')).not.toBeChecked(); expect(requests).toHaveLength(18);
 });
 
-test('manual IP query cancellation also aborts stalled body reads', async ({ page }) => {
+test('a static API and browser-enforced IP CORS failure use a labelled ipify fallback with a retry cooldown', async ({ page }) => {
+  await page.addInitScript(() => { window.__networkFixtureMode = 'native'; });
+  await page.clock.install();
+  let apiRequests = 0;
+  await page.route('**/api/client', route => { apiRequests++; return route.fulfill({ status: 404, body: 'Static site' }); });
+  const { requests, errors } = await interceptHttps(page, request => {
+    if (request.url === 'https://myip.ipip.net/') return {
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/plain' }, body: '当前 IP：203.0.113.8'
+    };
+    if (request.url === 'https://ipinfo.io/json') return {
+      headers: { 'Content-Type': 'application/json' }, body: '{"ip":"198.51.100.9"}'
+    };
+    if (request.url === 'https://api64.ipify.org/?format=json') return {
+      headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: '{"ip":"2001:db8::8"}'
+    };
+    return { status: 500, headers: { 'Content-Type': 'image/x-icon' }, body: 'opaque response' };
+  });
+  await openApp(page); await expect(page.locator('#ipCurrent')).toHaveText('2001:db8::8');
+  await expect(page.locator('#ipSource')).toContainText('ipify');
+  await expect(page.locator('#networkStatus')).toContainText('静态页面');
+  await expect(page.locator('#localLatency')).toContainText('ms');
+  expect(requests).toHaveLength(7); expect(apiRequests).toBe(1);
+  await page.clock.fastForward(30000); await expect.poll(() => requests.length).toBe(13);
+  await expect(page.locator('#refreshNetwork')).toHaveText('立即刷新');
+  expect(apiRequests).toBe(1); expect(requests.filter(request => request.url === 'https://ipinfo.io/json')).toHaveLength(1);
+  await page.locator('#autoNetwork').uncheck(); expect(errors).toEqual([]);
+});
+
+test('stopping automatic detection aborts stalled IP body reads', async ({ page }) => {
+  await page.addInitScript(() => { window.__networkFixtureMode = 'connectivity-only'; });
   await installStreams(page, { origins: ['https://myip.ipip.net', 'https://ipinfo.io'], stall: true });
-  await openApp(page); await page.locator('#queryExternalIp').click();
-  await expect(page.locator('#queryExternalIp')).toHaveText('停止 IP 查询');
+  await openApp(page); await expect(page.locator('#refreshNetwork')).toHaveText('停止检测');
   await expect.poll(() => page.evaluate(() => window.__fixtureRequests.length)).toBe(2);
-  await page.locator('#queryExternalIp').click();
-  await expect(page.locator('#networkStatus')).toHaveText('IP 查询已取消。');
+  await page.locator('#refreshNetwork').click();
+  await expect(page.locator('#networkStatus')).toContainText('本轮检测已取消');
   await expect(page.locator('#ipcn')).toHaveText('已取消'); await expect(page.locator('#ipgb')).toHaveText('已取消');
   expect(await page.evaluate(() => window.__fixtureRequests.every(request => request.aborted))).toBe(true);
 });
@@ -267,15 +340,17 @@ test('denied browser storage degrades to usable in-memory configuration', async 
   await expect(page.locator('#startBtn')).toBeEnabled();
 });
 
-test('corrupt legacy storage cannot blank the page or restore unsafe unlimited defaults', async ({ page }) => {
+test('legacy storage cannot blank the page or re-enable the old 100 MiB / 60-second defaults', async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem('tk_custom', '{broken'); localStorage.setItem('tk_hidden', '12');
     localStorage.setItem('tk_theme', '"bad-theme"');
     localStorage.setItem('tk_current', JSON.stringify({ url: 'javascript:alert(1)' }));
     localStorage.setItem('tk_max', '0'); localStorage.setItem('tk_duration', '0');
+    localStorage.setItem('tk_limits_v3', JSON.stringify({ maxMiB: 100, duration: 60 }));
   });
   await openApp(page); await expect(page.locator('#curUrl')).toContainText('https://');
-  await expect(page.locator('#maxMiB')).toHaveValue('100'); await expect(page.locator('#duration')).toHaveValue('60');
+  await expect(page.locator('#maxMiB')).toHaveValue('0'); await expect(page.locator('#duration')).toHaveValue('0');
+  await expect(page.locator('#maxEnabled')).not.toBeChecked(); await expect(page.locator('#durationEnabled')).not.toBeChecked();
   await openConfig(page); await expect(page.locator('#mSub')).toContainText('161 条 · 154 个唯一地址');
 });
 

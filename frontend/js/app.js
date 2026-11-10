@@ -54,17 +54,18 @@ function validateLink(focus = false) {
 }
 
 function validateLimits(focus = false) {
+  const maxEnabled = $('maxEnabled').checked, durationEnabled = $('durationEnabled').checked;
   const maxMiB = Number($('maxMiB').value), duration = Number($('duration').value);
-  const maxValid = $('maxMiB').value !== '' && Number.isFinite(maxMiB) && maxMiB >= 0 && maxMiB <= LIMITS.maxMiB;
-  const timeValid = $('duration').value !== '' && Number.isInteger(duration) && duration >= 0 && duration <= LIMITS.maxDurationSeconds;
+  const maxValid = !maxEnabled || ($('maxMiB').value !== '' && Number.isFinite(maxMiB) && maxMiB > 0 && maxMiB <= LIMITS.maxMiB);
+  const timeValid = !durationEnabled || ($('duration').value !== '' && Number.isInteger(duration) && duration > 0 && duration <= LIMITS.maxDurationSeconds);
   $('maxMiB').setAttribute('aria-invalid', String(!maxValid));
   $('duration').setAttribute('aria-invalid', String(!timeValid));
-  const text = !maxValid ? '流量上限需为 0–1,048,576 MiB 的有效数字；0 表示不限。' :
-    !timeValid ? '自动停止需为 0–86,400 秒的整数；0 表示不限。' : '';
+  const text = !maxValid ? '启用流量上限后需填写大于 0、最多 1,048,576 MiB 的有效数字；不需要时取消勾选。' :
+    !timeValid ? '启用自动停止后需填写 1–86,400 秒的整数；不需要时取消勾选。' : '';
   $('limitError').textContent = text; $('limitError').hidden = !text;
   if (text) { if (focus) $(maxValid ? 'duration' : 'maxMiB').focus(); return null; }
-  writeStorage('tk_limits_v3', { maxMiB, duration });
-  return { maxBytes: maxMiB * 1048576, durationSeconds: duration };
+  writeStorage('tk_limits_v3', { maxMiB, duration, maxEnabled, durationEnabled });
+  return { maxBytes: maxEnabled ? maxMiB * 1048576 : 0, durationSeconds: durationEnabled ? duration : 0 };
 }
 
 function threads() {
@@ -75,7 +76,11 @@ function threads() {
 
 function controls() {
   const running = engine.running, detecting = queue.running;
-  for (const id of ['diyLink', 'thread', 'thMinus', 'thPlus', 'maxMiB', 'duration', 'cacheBust', 'btnPick']) $(id).disabled = running;
+  for (const id of ['diyLink', 'thread', 'thMinus', 'thPlus', 'maxEnabled', 'durationEnabled', 'cacheBust', 'btnPick']) $(id).disabled = running;
+  $('maxMiB').disabled = running || !$('maxEnabled').checked;
+  $('duration').disabled = running || !$('durationEnabled').checked;
+  $('chooseReadable').disabled = running || detecting;
+  $('chooseReadable').textContent = store.current.url === store.recommended()?.url ? '检测或选择其他节点' : '切换推荐节点';
   $('startBtn').disabled = !running && detecting;
   $('startBtn').textContent = running ? '停止测试' : detecting ? '节点检测进行中…' : '开始测试';
   $('startBtn').classList.toggle('btn-danger', running);
@@ -102,7 +107,7 @@ function displayStats(snapshot = engine.snapshot(false)) {
 
 function engineState(event) {
   controls(); displayStats(event);
-  if (event.state === 'connecting') status('连接中，收到首个数据块后再扩展并发…');
+  if (event.state === 'connecting') { $('downloadRecovery').hidden = true; status('连接中，收到首个数据块后再扩展并发…'); }
   else if (event.state === 'connected') status('下载中 · 首块响应 ' + event.firstByteMs + ' ms · ' + event.threads + ' 并发', 'ok');
   else if (event.state === 'retrying') status('连接暂时失败，正在退避重试；可随时停止。');
   else if (event.state === 'stopped') {
@@ -112,6 +117,7 @@ function engineState(event) {
       event.reason === 'error' ? event.error : event.reason === 'offline' ? '网络已离线，测试停止；联网后可手动重新开始。' :
       event.reason === 'pagehide' ? '页面已离开，测试停止。' : '已停止测试；所有下载连接正在取消。';
     status(message, event.reason === 'error' || event.reason === 'offline' ? 'bad' : '');
+    $('downloadRecovery').hidden = event.reason !== 'error';
   }
 }
 
@@ -143,6 +149,12 @@ $('thPlus').addEventListener('click', () => { $('thread').value = clampThreads($
 for (const id of ['maxMiB', 'duration']) {
   $(id).addEventListener('blur', event => { if (event.relatedTarget !== $('startBtn')) validateLimits(); });
   $(id).addEventListener('input', () => { $(id).setAttribute('aria-invalid', 'false'); $('limitError').hidden = true; });
+}
+for (const [toggle, input, suggested] of [['maxEnabled', 'maxMiB', 100], ['durationEnabled', 'duration', 60]]) {
+  $(toggle).addEventListener('change', () => {
+    if ($(toggle).checked && Number($(input).value) <= 0) $(input).value = suggested;
+    controls(); validateLimits();
+  });
 }
 $('keepAlive').addEventListener('change', () => {
   writeStorage('tk_keep', $('keepAlive').checked);
@@ -235,6 +247,13 @@ function openConfig() {
   renderConfig(); $('configDialog').showModal(); $('searchInput').focus();
 }
 for (const id of ['openConfig', 'btnPick']) $(id).addEventListener('click', openConfig);
+$('chooseReadable').addEventListener('click', () => {
+  if (engine.running || queue.running) return;
+  const recommended = store.recommended();
+  if (!recommended || store.current.url === recommended.url) { $('searchInput').value = ''; openConfig(); return; }
+  selectNode(recommended); $('downloadRecovery').hidden = true;
+  status('已切换推荐节点；不会自动下载，可先检测可读性，再点击开始。');
+});
 $('closeConfig').addEventListener('click', () => $('configDialog').close());
 $('configDialog').addEventListener('close', () => {
   if (queue.running) { queue.stop(); saveResults(); }
@@ -339,9 +358,10 @@ $('screenOff').addEventListener('dblclick', () => $('screenOff').close());
 $('screenOff').addEventListener('close', () => { clearTimeout(screenTimer); chart.draw(); displayStats(); });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !$('screenOff').open) { chart.draw(); displayStats(); }
+  if (document.visibilityState === 'visible') network.resume(); else network.pause('hidden');
 });
-window.addEventListener('offline', () => { engine.stop('offline'); queue.stop(); network.stopAll(); });
-window.addEventListener('online', () => { if (!engine.running) status('网络已恢复；测试不会自动开始。'); });
+window.addEventListener('offline', () => { engine.stop('offline'); queue.stop(); network.pause('offline'); });
+window.addEventListener('online', () => { network.resume(true); if (!engine.running) status('网络已恢复；测试不会自动开始。'); });
 
 function startTicker() {
   if (ticker !== null) return;
@@ -356,15 +376,20 @@ function startTicker() {
   }, 1000);
 }
 window.addEventListener('pagehide', () => {
-  engine.stop('pagehide'); queue.stop(); keep.stop(); network.stopAll();
+  engine.stop('pagehide'); queue.stop(); keep.stop(); network.pause('pagehide');
   clearInterval(ticker); ticker = null;
 });
-window.addEventListener('pageshow', () => startTicker());
+window.addEventListener('pageshow', () => { startTicker(); network.resume(); });
 
-// 旧版配置仍能读取，但不恢复旧版“默认不限量”的危险设置。
+// 3.0 的数值不代表用户显式开启；只有新版保存的开关才恢复启用状态。
 const limits = readStorage('tk_limits_v3', null);
-$('maxMiB').value = limits && Number.isFinite(limits.maxMiB) && limits.maxMiB >= 0 && limits.maxMiB <= LIMITS.maxMiB ? limits.maxMiB : LIMITS.defaultMaxBytes / 1048576;
-$('duration').value = limits && Number.isInteger(limits.duration) && limits.duration >= 0 && limits.duration <= LIMITS.maxDurationSeconds ? limits.duration : LIMITS.defaultDurationSeconds;
+const explicitLimits = limits && typeof limits.maxEnabled === 'boolean' && typeof limits.durationEnabled === 'boolean';
+const maxValid = explicitLimits && Number.isFinite(limits.maxMiB) && limits.maxMiB >= 0 && limits.maxMiB <= LIMITS.maxMiB;
+const durationValid = explicitLimits && Number.isInteger(limits.duration) && limits.duration >= 0 && limits.duration <= LIMITS.maxDurationSeconds;
+$('maxMiB').value = maxValid ? limits.maxMiB : LIMITS.defaultMaxBytes / 1048576;
+$('duration').value = durationValid ? limits.duration : LIMITS.defaultDurationSeconds;
+$('maxEnabled').checked = maxValid && limits.maxEnabled === true && limits.maxMiB > 0;
+$('durationEnabled').checked = durationValid && limits.durationEnabled === true && limits.duration > 0;
 $('thread').value = clampThreads(readStorage('tk_thread', LIMITS.defaultThreads));
 $('keepAlive').checked = readStorage('tk_keep', false) === true;
 $('cacheBust').checked = readStorage('tk_cache_bust', false) === true;
@@ -379,4 +404,4 @@ if (savedResults && typeof savedResults === 'object' && !Array.isArray(savedResu
 selectNode(store.current);
 $('brandVer').textContent = 'v' + VERSION; $('footerVersion').textContent = VERSION;
 controls(); status(navigator.onLine ? '就绪。点击开始前，请确认节点和流量限制。' : '当前离线，请联网后再开始测试。');
-startTicker(); network.refresh();
+startTicker(); network.start();

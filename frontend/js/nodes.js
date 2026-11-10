@@ -1,5 +1,7 @@
 // 完整保留原版 17 个分组、161 条节点；重复 URL 只在检测时去重。
 // 名称中的“定向”等标记为历史描述，不代表运营商计费承诺或当前可用性。
+export const RECOMMENDED_DOWNLOAD_URL = 'https://speed.cloudflare.com/__down?bytes=1073741824';
+
 export const DEFAULT_GROUPS = [
   { name: '常用推荐', items: [
     { name: '百度CDN [高速]', url: 'https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk' },

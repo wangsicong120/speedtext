@@ -39,10 +39,11 @@
 
 ### 部署后的最小检查
 
-- `/api/health` 返回 `{"ok":true,"version":"3.0.0"}`，`Cache-Control: no-store`。
+- `/api/health` 返回 `{"ok":true,"version":"3.1.0"}`，`Cache-Control: no-store`；`/api/config` 的默认流量与时长限制均为 `0`。
 - `/` 返回完整页面，带 CSP、`nosniff`、`DENY`、`no-referrer`；HTTPS 响应另带 HSTS。
 - `/api/client` 能显示本站出口信息；跨站 API 请求失败，`/api/download` 为 404。
-- 初次打开没有第三方 IP/连通性请求或下载；本人点击后才发起。
+- 初次打开自动发起小型 IP/连通性检测，不启动下载；完成后约 30 秒刷新，关闭自动刷新后不再轮询，后台或离线暂停。
+- 流量上限和自动停止开关默认关闭；两项都关闭时开始前有额外确认。已保存的显式开关可恢复，旧版隐式限制不会启用。
 - 选择本人控制且支持 CORS 的小测试资源，确认停止后连接取消。不要用批量真实下载代替功能验证。
 
 ## 可选：独立静态前端
@@ -53,8 +54,9 @@ npm run build:static
 
 只托管 `dist/client/`。使用相对资源路径，可放在 GitHub Pages 子路径或其他静态服务器。不要直接用 `file://` 打开模块页面。
 
-- 下载、节点管理、主题、图表和手动第三方查询仍可用。
-- `/api/client`、`/api/health` 不存在时明确提示静态模式，本站延迟不显示有效数值；不会偷偷改用第三方查询。
+- 下载、节点管理、主题、图表和自动第三方检测仍可用。
+- `/api/client` 不存在或返回静态 HTML 时，当前 IP 自动回退到 ipip.net / ipinfo.io，必要时用 ipify，明确显示第三方来源；本站首响应用页面的同源图标测量，不冒充边缘 API 或 ICMP Ping。
+- 本站 API 与 ipinfo 失败后冷却 5 分钟，截止时间不会随每轮检测后移；手动刷新或重新联网可强制重试。自动刷新可关闭并保存，IP 服务都失败时不妨碍下载与节点管理。
 - `frontend/public/_headers` 会随构建复制。支持该约定的静态平台可读取它；GitHub Pages 等不读取时，必须由前置服务器另行设置安全响应头。HTML 的 referrer 策略不能替代完整 CSP/防嵌入响应头。
 - 不建议把后端单独放在另一个域名并给 API 开放 `Access-Control-Allow-Origin: *`。如需不同站点，需重新设计允许源、隐私边界与测试，不属于当前配置。
 

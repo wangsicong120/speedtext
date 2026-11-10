@@ -1,9 +1,10 @@
-export const VERSION = '3.0.0';
+export const VERSION = '3.1.0';
 export const LIMITS = Object.freeze({
   maxThreads: 32,
   defaultThreads: 4,
-  defaultMaxBytes: 100 * 1024 * 1024,
-  defaultDurationSeconds: 60,
+  defaultMaxBytes: 0,
+  defaultDurationSeconds: 0,
+  networkRefreshMs: 30000,
   maxDurationSeconds: 86400,
   maxMiB: 1048576,
   idleTimeoutMs: 10000,

@@ -1,4 +1,5 @@
-import { abortError } from './utils.js';
+import { LIMITS } from '../../shared/limits.js';
+import { abortError, readStorage, writeStorage } from './utils.js';
 
 // 包括第三方文本在内，所有小响应都有读取上限；超时覆盖整个响应体。
 export async function readTextLimited(response, maxBytes = 32768) {
@@ -52,118 +53,279 @@ export async function fetchSmall(url, { signal, timeoutMs = 8000, fetchImpl = gl
 
 const cleanText = value => typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 200) : '';
 
+export function isIpAddress(value) {
+  if (typeof value !== 'string' || value !== value.trim()) return false;
+  if (/^(\d{1,3}\.){3}\d{1,3}$/.test(value)) return value.split('.').every(part => +part <= 255);
+  if (!/^[a-f0-9:]+$/i.test(value) || !value.includes(':')) return false;
+  try { return new URL('https://[' + value + ']/').hostname.startsWith('['); } catch { return false; }
+}
+
+export function parseExternalIp(text, json = false) {
+  if (json) {
+    const info = JSON.parse(text);
+    if (!info || Array.isArray(info) || !isIpAddress(info.ip)) throw new Error('服务未返回有效 IP');
+    const location = [info.city, info.region, info.country, info.org].map(cleanText).filter(Boolean).join(' · ');
+    return { ip: info.ip, location, message: [info.ip, location].filter(Boolean).join(' · ') };
+  }
+  const message = cleanText(text.replace(/\s+/g, ' ').trim());
+  const ip = isIpAddress(message) ? message : message.match(/IP\s*[:：]\s*([a-f0-9:.]+)/i)?.[1];
+  if (!isIpAddress(ip)) throw new Error('服务未返回有效 IP');
+  const location = message.includes('来自') ? message.split(/来自\s*[:：]\s*/)[1] || '' : '';
+  return { ip, message, location };
+}
+
+const targets = [
+  ['laycn', 'https://www.baidu.com/favicon.ico'], ['laygb', 'https://www.cloudflare.com/favicon.ico'],
+  ['laygh', 'https://github.com/favicon.ico'], ['layyt', 'https://www.youtube.com/favicon.ico']
+];
+
 export class NetworkPanel {
-  constructor({ onLatency = () => {} } = {}) {
-    this.onLatency = onLatency;
-    this.latency = null;
-    this.clientController = null;
-    this.ipController = null;
-    this.connectController = null;
-    this.heartbeatController = null;
-    this.$ = id => document.getElementById(id);
-    this.$('refreshNetwork').addEventListener('click', () => this.refresh());
-    this.$('queryExternalIp').addEventListener('click', () => this.queryIp());
-    this.$('checkConnectivity').addEventListener('click', () => this.checkConnectivity());
+  constructor({ onLatency = () => {}, fetchImpl = globalThis.fetch, documentRef = globalThis.document,
+    isOnline = () => globalThis.navigator.onLine, now = () => performance.now(), wallNow = () => Date.now(),
+    intervalMs = LIMITS.networkRefreshMs, requestTimeoutMs = 8000, connectivityTimeoutMs = 5000,
+    setTimer = setTimeout, clearTimer = clearTimeout, read = readStorage, write = writeStorage } = {}) {
+    // 原生 Window API 若作为类成员直接调用会产生 Illegal invocation。
+    this.onLatency = onLatency; this.fetch = (...args) => fetchImpl(...args); this.document = documentRef;
+    this.isOnline = isOnline; this.now = now; this.wallNow = wallNow;
+    this.intervalMs = intervalMs; this.requestTimeoutMs = requestTimeoutMs;
+    this.connectivityTimeoutMs = connectivityTimeoutMs;
+    this.setTimer = (...args) => setTimer(...args); this.clearTimer = timer => clearTimer(timer);
+    this.write = write; this.$ = id => documentRef.getElementById(id);
+    this.latency = null; this.request = null; this.heartbeatController = null; this.timer = null;
+    this.started = false; this.paused = false; this.lastUpdated = null; this.sourceNote = '';
+    this.apiAvailable = null; this.apiRetryAt = 0; this.ipinfoRetryAt = 0;
+    this.enabled = read('tk_network_auto', true) !== false;
+    this.$('autoNetwork').checked = this.enabled;
+    const base = new URL(documentRef.baseURI);
+    const icon = new URL(documentRef.querySelector('link[rel="icon"]')?.getAttribute('href') || './favicon.svg', base);
+    this.staticProbeUrl = icon.origin === base.origin ? icon.href : new URL('./favicon.svg', base).href;
+    this.$('refreshNetwork').addEventListener('click', () => {
+      if (this.request) this.cancelRefresh(); else this.refresh({ force: true });
+    });
+    this.$('autoNetwork').addEventListener('change', () => this.setAutomatic(this.$('autoNetwork').checked));
   }
 
   output(id, text, state = '') {
-    const node = this.$(id);
-    node.textContent = text;
-    node.className = state ? 'r-' + state : '';
+    const node = this.$(id); node.textContent = text; node.className = state ? 'r-' + state : '';
   }
 
-  async refresh() {
-    if (this.clientController) return;
-    const controller = new AbortController(); this.clientController = controller;
-    this.$('refreshNetwork').disabled = true;
-    this.output('ipCurrent', '读取中…'); this.output('ipLocation', '读取中…');
-    try {
-      const { text, latency } = await fetchSmall('/api/client', { signal: controller.signal });
-      const info = JSON.parse(text);
-      if (!info || !['cloudflare', 'local'].includes(info.source)) throw new Error('API 响应无效');
-      this.latency = latency; this.onLatency(latency);
-      this.output('localLatency', latency + ' ms', 'ok');
-      this.output('ipCurrent', cleanText(info.ip) || (info.source === 'local' ? '本地开发模式，不显示真实 IP' : '边缘未提供 IP'));
-      this.output('ipLocation', [info.country, info.region, info.city, info.organization, info.colo].map(cleanText).filter(Boolean).join(' · ') || '暂无边缘信息');
-      this.$('networkStatus').textContent = info.source === 'local' ? '本地模式不信任伪造的转发头；部署到 Workers 后显示边缘信息。' : '本站信息已更新；第三方查询仍需手动触发。';
-    } catch (error) {
-      this.latency = null; this.onLatency(null);
-      this.output('ipCurrent', '本站 API 不可用（静态模式或网络异常）', 'warn');
-      this.output('ipLocation', '下载与节点管理仍可使用'); this.output('localLatency', '未测得', 'warn');
-      this.$('networkStatus').textContent = error?.name === 'AbortError' ? '本站查询已取消。' : '可点击“刷新本站信息”重试；静态托管不提供边缘 IP API。';
-    } finally {
-      if (this.clientController === controller) this.clientController = null;
-      this.$('refreshNetwork').disabled = false;
+  status(text) {
+    if (this.$('networkStatus').textContent !== text) this.$('networkStatus').textContent = text;
+  }
+
+  canPoll() { return this.started && !this.paused && this.document.visibilityState === 'visible' && this.isOnline(); }
+
+  summary() {
+    return (this.enabled ? '自动刷新已开启（约 30 秒；后台或离线暂停）。' : '自动刷新已关闭，可点击“立即刷新”。') +
+      (this.sourceNote ? ' ' + this.sourceNote : '') + ' 跨域响应到达不等于 HTTP 成功或服务可登录。';
+  }
+
+  clearSchedule() { if (this.timer !== null) this.clearTimer(this.timer); this.timer = null; }
+
+  schedule() {
+    this.clearSchedule();
+    if (this.enabled && this.canPoll() && !this.request) {
+      this.timer = this.setTimer(() => { this.timer = null; this.refresh({ automatic: true }); }, this.intervalMs);
     }
   }
 
-  async heartbeat() {
-    if (this.heartbeatController) return;
-    const controller = new AbortController(); this.heartbeatController = controller;
-    try {
-      const { text, latency } = await fetchSmall('/api/health', { signal: controller.signal, timeoutMs: 5000 });
-      if (JSON.parse(text).ok !== true) throw new Error('健康检查不可用');
-      this.latency = latency; this.onLatency(latency); this.output('localLatency', latency + ' ms', 'ok');
-    } catch {
-      this.latency = null; this.onLatency(null); this.output('localLatency', '未测得', 'warn');
-    } finally { if (this.heartbeatController === controller) this.heartbeatController = null; }
+  start() { this.started = true; this.resume(); }
+
+  setAutomatic(enabled) {
+    this.enabled = enabled === true; this.$('autoNetwork').checked = this.enabled;
+    this.write('tk_network_auto', this.enabled); this.clearSchedule();
+    if (!this.enabled && this.request?.automatic) this.cancelRefresh();
+    if (this.enabled && this.canPoll()) this.refresh({ automatic: true });
+    else this.status(this.summary());
   }
 
-  async queryIp() {
-    if (this.ipController) { this.ipController.abort(); return; }
-    const controller = new AbortController(); this.ipController = controller;
-    const button = this.$('queryExternalIp'); button.textContent = '停止 IP 查询';
-    this.$('networkStatus').textContent = '正在请求 ipip.net 和 ipinfo.io；仅本次查询，不会自动轮询。';
-    await Promise.allSettled([
-      this.externalIp('ipcn', 'https://myip.ipip.net/', false, controller.signal),
-      this.externalIp('ipgb', 'https://ipinfo.io/json', true, controller.signal)
-    ]);
-    if (this.ipController === controller) this.ipController = null;
-    button.textContent = '查询多路出口 IP';
-    this.$('networkStatus').textContent = controller.signal.aborted ? 'IP 查询已取消。' : '本次 IP 查询结束。失败可能由 CORS、限流或网络限制引起。';
+  pause(reason = 'hidden') {
+    this.paused = true; this.stopAll();
+    this.latency = null; this.onLatency(null);
+    this.status(reason === 'offline' ? '网络离线，自动更新已暂停；之前结果可能过期。' : '页面后台或已离开，自动更新已暂停；之前结果可能过期。');
   }
 
-  async externalIp(id, url, json, signal) {
-    this.output(id, '查询中…');
-    try {
-      const { text } = await fetchSmall(url, { signal });
-      let message;
-      if (json) {
-        const info = JSON.parse(text);
-        message = [info?.ip, info?.city, info?.region, info?.country, info?.org].map(cleanText).filter(Boolean).join(' · ');
-      } else message = cleanText(text.replace(/\s+/g, ' ').trim());
-      this.output(id, message || '服务未返回 IP 信息', message ? 'ok' : 'warn');
-    } catch (error) { this.output(id, error?.name === 'AbortError' ? '已取消' : '查询失败（跨域、限流或超时）', 'warn'); }
-  }
-
-  async checkConnectivity() {
-    if (this.connectController) { this.connectController.abort(); return; }
-    const controller = new AbortController(); this.connectController = controller;
-    const button = this.$('checkConnectivity'); button.textContent = '停止连通性检测';
-    const targets = [
-      ['laycn', 'https://www.baidu.com/favicon.ico'], ['laygb', 'https://www.cloudflare.com/favicon.ico'],
-      ['laygh', 'https://github.com/favicon.ico'], ['layyt', 'https://www.youtube.com/favicon.ico']
-    ];
-    await Promise.allSettled(targets.map(async ([id, url]) => {
-      this.output(id, '检测中…');
-      const child = new AbortController();
-      const abort = () => child.abort(); controller.signal.addEventListener('abort', abort, { once: true });
-      const timer = setTimeout(abort, 5000), started = performance.now();
-      try {
-        const response = await fetch(url, { mode: 'no-cors', cache: 'no-store', credentials: 'omit',
-          referrerPolicy: 'no-referrer', signal: child.signal });
-        if (child.signal.aborted) throw abortError();
-        this.output(id, Math.round(performance.now() - started) + ' ms（响应到达）', 'ok');
-        try { await response.body?.cancel(); } catch {}
-      } catch { this.output(id, controller.signal.aborted ? '已取消' : '未测得（超时或网络限制）', 'warn'); }
-      finally { clearTimeout(timer); controller.signal.removeEventListener('abort', abort); child.abort(); }
-    }));
-    if (this.connectController === controller) this.connectController = null;
-    button.textContent = '检测第三方连通性';
-    this.$('networkStatus').textContent = controller.signal.aborted ? '连通性检测已取消。' : '本次连通性检测结束。跨域响应到达不等于 HTTP 成功或服务可登录。';
+  resume(force = false) {
+    const wasPaused = this.paused;
+    this.paused = false;
+    if (!this.canPoll()) return;
+    if (this.enabled) {
+      if (force || wasPaused || this.lastUpdated === null || this.timer === null) this.refresh({ automatic: true, force });
+    } else this.status(this.summary());
   }
 
   stopAll() {
-    for (const controller of [this.clientController, this.ipController, this.connectController, this.heartbeatController]) controller?.abort();
+    this.clearSchedule();
+    const request = this.request; this.request = null; request?.controller.abort();
+    const heartbeat = this.heartbeatController; this.heartbeatController = null; heartbeat?.abort();
+    this.$('refreshNetwork').textContent = '立即刷新';
+    if (request && this.lastUpdated === null) {
+      for (const id of ['ipCurrent', 'ipcn', 'ipgb', 'laycn', 'laygb', 'laygh', 'layyt']) this.output(id, '尚未测得', 'warn');
+    }
+  }
+
+  cancelRefresh() {
+    this.stopAll();
+    if (this.lastUpdated === null) {
+      for (const id of ['ipCurrent', 'ipcn', 'ipgb', 'laycn', 'laygb', 'laygh', 'layyt']) this.output(id, '已取消', 'warn');
+      this.output('networkChecked', '本轮已取消');
+    }
+    this.status('本轮检测已取消。' + this.summary()); this.schedule();
+  }
+
+  current(request) { return this.request === request && !request.controller.signal.aborted; }
+
+  small(url, signal) {
+    return fetchSmall(url, { signal, fetchImpl: this.fetch, timeoutMs: this.requestTimeoutMs, now: this.now });
+  }
+
+  async staticClient(signal) {
+    try {
+      const { latency } = await this.small(this.staticProbeUrl, signal);
+      return { available: false, source: 'static', latency };
+    } catch (error) { if (signal.aborted) throw abortError(); return { available: false, source: 'static', latency: null }; }
+  }
+
+  async readClient(signal, force) {
+    if (!force && this.apiAvailable === false && this.wallNow() < this.apiRetryAt) {
+      return { ...await this.staticClient(signal), retryAt: this.apiRetryAt };
+    }
+    try {
+      const { text, latency } = await this.small('/api/client', signal);
+      const info = JSON.parse(text);
+      if (!info || !['cloudflare', 'local'].includes(info.source)) throw new Error('API 响应无效');
+      return { available: true, source: info.source, ip: isIpAddress(info.ip) ? info.ip : null, latency,
+        location: [info.country, info.region, info.city, info.organization, info.colo].map(cleanText).filter(Boolean).join(' · ') };
+    } catch (error) {
+      if (signal.aborted) throw abortError();
+      return { ...await this.staticClient(signal), retryAt: this.wallNow() + 5 * 60 * 1000 };
+    }
+  }
+
+  async readExternal(url, json, signal, provider) {
+    try {
+      const { text } = await this.small(url, signal);
+      return { ok: true, ...parseExternalIp(text, json), provider };
+    } catch (error) {
+      if (signal.aborted) throw abortError();
+      return { ok: false, message: '未测得（跨域、限流或超时）', provider };
+    }
+  }
+
+  async readGlobal(signal, force) {
+    let retryAt = this.ipinfoRetryAt;
+    if (force || this.wallNow() >= this.ipinfoRetryAt) {
+      const result = await this.readExternal('https://ipinfo.io/json', true, signal, 'ipinfo.io');
+      if (result.ok) return { ...result, retryAt: 0 };
+      retryAt = this.wallNow() + 5 * 60 * 1000;
+    }
+    const result = await this.readExternal('https://api64.ipify.org?format=json', true, signal, 'ipify');
+    return { ...result, retryAt };
+  }
+
+  async connectivity(signal) {
+    return Promise.all(targets.map(async ([id, url]) => {
+      const child = new AbortController(), abort = () => child.abort();
+      signal.addEventListener('abort', abort, { once: true }); if (signal.aborted) child.abort();
+      const timer = setTimeout(abort, this.connectivityTimeoutMs), started = this.now();
+      let response;
+      try {
+        if (child.signal.aborted) throw abortError();
+        response = await this.fetch(url, { mode: 'no-cors', cache: 'no-store', credentials: 'omit',
+          referrerPolicy: 'no-referrer', signal: child.signal });
+        if (child.signal.aborted) throw abortError();
+        const opaque = response.type === 'opaque';
+        return { id, ok: opaque || response.ok, message: Math.round(this.now() - started) +
+          (opaque ? ' ms（响应到达，状态不可读）' : ' ms（HTTP ' + response.status + '，响应到达）') };
+      } catch { return { id, ok: false, message: signal.aborted ? '已取消' : '未测得（超时或网络限制）' }; }
+      finally {
+        clearTimeout(timer); signal.removeEventListener('abort', abort); child.abort();
+        try { await response?.body?.cancel(); } catch {}
+      }
+    }));
+  }
+
+  setLatency(latency) {
+    this.latency = Number.isFinite(latency) ? latency : null; this.onLatency(this.latency);
+    this.output('localLatency', this.latency === null ? '未测得' : this.latency + ' ms', this.latency === null ? 'warn' : 'ok');
+  }
+
+  refresh({ automatic = false, force = false } = {}) {
+    if (this.request) return this.request.promise;
+    if (!this.canPoll()) return Promise.resolve();
+    this.clearSchedule(); this.heartbeatController?.abort(); this.heartbeatController = null;
+    const request = { controller: new AbortController(), automatic, promise: null }; this.request = request;
+    this.$('refreshNetwork').textContent = '停止检测';
+    if (this.lastUpdated === null) {
+      for (const id of ['ipCurrent', 'ipcn', 'ipgb', 'laycn', 'laygb', 'laygh', 'layyt']) this.output(id, '检测中…');
+    }
+    if (!automatic || this.lastUpdated === null) this.status('正在检测出口 IP 与连通性；只请求小响应，不会启动下载。');
+    const signal = request.controller.signal;
+    request.promise = (async () => {
+      try {
+        const [client, domestic, global, connections] = await Promise.all([
+          this.readClient(signal, force), this.readExternal('https://myip.ipip.net/', false, signal, 'ipip.net'),
+          this.readGlobal(signal, force), this.connectivity(signal)
+        ]);
+        if (!this.current(request)) return;
+        this.apiAvailable = client.available;
+        this.apiRetryAt = client.available ? 0 : client.retryAt;
+        this.ipinfoRetryAt = global.retryAt;
+        this.setLatency(client.latency);
+        for (const [id, result] of [['ipcn', domestic], ['ipgb', global]]) {
+          this.output(id, result.message + ' · ' + result.provider, result.ok ? 'ok' : 'warn');
+        }
+        const external = global.ok ? global : domestic.ok ? domestic : null;
+        if (client.source === 'cloudflare' && client.ip) {
+          this.output('ipCurrent', client.ip, 'ok'); this.output('ipSource', '本站边缘（Cloudflare）');
+          this.output('ipLocation', client.location || '暂无归属信息');
+          this.sourceNote = '当前 IP 来自本站边缘请求。';
+        } else if (external) {
+          this.output('ipCurrent', external.ip, 'ok'); this.output('ipSource', '第三方 · ' + external.provider);
+          this.output('ipLocation', external.location || (domestic.ok && domestic.ip === external.ip ? domestic.location : '') || '该服务未提供归属信息');
+          this.sourceNote = client.source === 'local' ? '本地模式已回退到第三方 IP 检测，未使用伪造转发头。' :
+            client.available ? '本站边缘未提供有效 IP，已回退到第三方检测。' : '静态页面或本站 API 暂不可用，已使用第三方 IP 检测。';
+        } else {
+          this.output('ipCurrent', '暂未测得出口 IP', 'warn'); this.output('ipSource', '检测失败');
+          this.output('ipLocation', '可稍后刷新，或检查网络 / 扩展限制');
+          this.sourceNote = 'IP 服务暂未返回可读结果，下载功能仍可使用。';
+        }
+        for (const result of connections) this.output(result.id, result.message, result.ok ? 'ok' : 'warn');
+        this.lastUpdated = this.wallNow();
+        this.output('networkChecked', new Date(this.lastUpdated).toLocaleTimeString('zh-CN', { hour12: false }));
+        this.status(this.summary());
+      } catch (error) {
+        if (this.current(request)) this.status('本轮检测未完成，可稍后刷新。' + this.summary());
+      } finally {
+        request.controller.abort();
+        if (this.request === request) {
+          this.request = null; this.$('refreshNetwork').textContent = '立即刷新'; this.schedule();
+        }
+      }
+    })();
+    return request.promise;
+  }
+
+  async heartbeat() {
+    if (!this.canPoll() || this.heartbeatController || this.request) return;
+    const controller = new AbortController(); this.heartbeatController = controller;
+    try {
+      let result;
+      if (this.apiAvailable !== false) {
+        try {
+          result = await this.small('/api/health', controller.signal);
+          if (JSON.parse(result.text).ok !== true) throw new Error('健康检查不可用');
+        } catch (error) {
+          if (controller.signal.aborted) throw abortError();
+          result = await this.small(this.staticProbeUrl, controller.signal);
+          if (this.heartbeatController === controller) { this.apiAvailable = false; this.apiRetryAt = this.wallNow() + 5 * 60 * 1000; }
+        }
+      } else result = await this.small(this.staticProbeUrl, controller.signal);
+      if (this.heartbeatController === controller && !controller.signal.aborted) this.setLatency(result.latency);
+    } catch {
+      if (this.heartbeatController === controller && !controller.signal.aborted) this.setLatency(null);
+    } finally {
+      controller.abort(); if (this.heartbeatController === controller) this.heartbeatController = null;
+    }
   }
 }

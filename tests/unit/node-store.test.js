@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { NodeStore, sanitizeNode } from '../../frontend/js/node-store.js';
-import { DEFAULT_GROUPS } from '../../frontend/js/nodes.js';
+import { DEFAULT_GROUPS, RECOMMENDED_DOWNLOAD_URL } from '../../frontend/js/nodes.js';
 
 const create = values => new NodeStore({ read: (key, fallback) => values?.[key] ?? fallback, write: () => true });
 test('all original grouped nodes were migrated exactly', () => {
@@ -28,7 +28,7 @@ test('search matches grouping, names, and URLs case-insensitively', () => {
 test('hiding a duplicate URL hides all appearances, and undo restores them', () => {
   const store = create(); const url = DEFAULT_GROUPS[0].items[1].url;
   const count = store.all().filter(item => item.url === url).length; assert.equal(count, 3);
-  store.remove(url); assert.equal(store.all().length, 161 - count); assert.equal(store.current.url, DEFAULT_GROUPS[0].items[0].url);
+  store.remove(url); assert.equal(store.all().length, 161 - count); assert.equal(store.current.url, RECOMMENDED_DOWNLOAD_URL);
   assert(store.undo()); assert.equal(store.all().length, 161);
   store.remove(url); store.restore(); assert.equal(store.hidden.size, 0);
 });
@@ -43,4 +43,11 @@ test('custom node count is bounded and blocked storage is reported', () => {
   store.select({ url: 'https://example.com/a' }); assert.equal(store.persistent, false);
   for (let index = 0; index < 200; index++) store.add({ url: 'https://example.com/' + index });
   assert.throws(() => store.add({ url: 'https://example.com/extra' }), /200/);
+});
+
+test('fresh browsers prefer the CORS-capable speed endpoint without replacing saved selections', () => {
+  assert.equal(create().current.url, RECOMMENDED_DOWNLOAD_URL);
+  const saved = DEFAULT_GROUPS[0].items[0];
+  assert.equal(create({ tk_current: saved }).current.url, saved.url);
+  assert.notEqual(create({ tk_hidden: [RECOMMENDED_DOWNLOAD_URL] }).current.url, RECOMMENDED_DOWNLOAD_URL);
 });

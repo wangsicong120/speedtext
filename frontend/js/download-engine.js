@@ -4,7 +4,8 @@ import { clampThreads, delay, normalizeUrl, requestUrl } from './utils.js';
 export class DownloadEngine {
   constructor({ fetchImpl = globalThis.fetch, now = () => performance.now(), onState = () => {},
     idleTimeoutMs = LIMITS.idleTimeoutMs, retryBaseMs = 500, maxFailures = 3 } = {}) {
-    this.fetch = fetchImpl;
+    // Window.fetch 不能以引擎实例为 this；保持无接收者调用，兼容原生 API 与注入测试。
+    this.fetch = (...args) => fetchImpl(...args);
     this.now = now;
     this.onState = onState;
     this.idleTimeoutMs = idleTimeoutMs;

@@ -19,7 +19,7 @@
     <div class="header-inner">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 15h4l3-10 4 15 3-8h4"/></svg></span>
-        <h1>流量消耗器</h1><span class="version" id="brandVer" translate="no">v3.0.0</span>
+        <h1>流量消耗器</h1><span class="version" id="brandVer" translate="no">v3.1.0</span>
       </div>
       <button type="button" class="icon-btn" id="screenBtn" title="进入伪熄屏" aria-label="进入伪熄屏"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4M3 3l18 18"/></svg></button>
       <button type="button" class="icon-btn" id="openConfig" title="地址配置与检测" aria-label="地址配置与检测"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></button>
@@ -37,7 +37,7 @@
           <div class="form-group">
             <label for="diyLink">下载地址</label>
             <input type="url" id="diyLink" name="downloadUrl" class="form-control" placeholder="https://example.com/file.bin…" autocomplete="off" inputmode="url" spellcheck="false" aria-describedby="linkHelp linkError">
-            <p class="help" id="linkHelp">浏览器直连目标地址。需要目标支持 CORS；后端不代理下载。</p>
+            <p class="help" id="linkHelp">浏览器直连目标，需要支持 CORS。首次推荐 Cloudflare 测速节点；历史节点可先在“选择节点”中检测，后端不代理下载。</p>
             <p class="field-error" id="linkError" role="status" aria-live="polite" hidden></p>
           </div>
           <div class="settings-grid">
@@ -45,16 +45,17 @@
               <label for="thread">并发连接（1–32）</label>
               <div class="spinner"><button type="button" class="btn" id="thMinus" aria-label="减少并发">−</button><input type="number" id="thread" name="threads" class="form-control" min="1" max="32" step="1" value="4" inputmode="numeric" autocomplete="off"><button type="button" class="btn" id="thPlus" aria-label="增加并发">+</button></div>
             </div>
-            <div class="form-group"><label for="maxMiB">流量上限（MiB）</label><input type="number" id="maxMiB" name="maxMiB" class="form-control" min="0" max="1048576" step="any" value="100" inputmode="decimal" autocomplete="off" aria-describedby="limitHelp limitError"></div>
-            <div class="form-group"><label for="duration">自动停止（秒）</label><input type="number" id="duration" name="durationSeconds" class="form-control" min="0" max="86400" step="1" value="60" inputmode="numeric" autocomplete="off" aria-describedby="limitHelp limitError"></div>
+            <div class="form-group"><label class="check-label limit-switch"><input type="checkbox" id="maxEnabled" name="maxEnabled" aria-label="启用流量上限" aria-controls="maxMiB"><span>流量上限（MiB）</span></label><label class="visually-hidden" for="maxMiB">流量上限数值（MiB）</label><input type="number" id="maxMiB" name="maxMiB" class="form-control" min="0" max="1048576" step="any" value="0" inputmode="decimal" autocomplete="off" aria-describedby="limitHelp limitError" disabled></div>
+            <div class="form-group"><label class="check-label limit-switch"><input type="checkbox" id="durationEnabled" name="durationEnabled" aria-label="启用自动停止" aria-controls="duration"><span>自动停止（秒）</span></label><label class="visually-hidden" for="duration">自动停止时长（秒）</label><input type="number" id="duration" name="durationSeconds" class="form-control" min="0" max="86400" step="1" value="0" inputmode="numeric" autocomplete="off" aria-describedby="limitHelp limitError" disabled></div>
           </div>
-          <p class="help" id="limitHelp">默认最多 100 MiB / 60 秒，先到即停。0 表示不限制；1 MiB = 1,048,576 字节。</p>
+          <p class="help" id="limitHelp">流量上限和自动停止默认关闭，勾选后才生效；未开启时请手动停止，可能产生持续流量费用。1 MiB = 1,048,576 字节。</p>
           <p class="field-error" id="limitError" role="status" aria-live="polite" hidden></p>
           <div class="options-row"><label class="check-label"><input type="checkbox" id="keepAlive" name="keepAlive"><span>运行时保持屏幕常亮 / 静音保活</span></label><label class="check-label"><input type="checkbox" id="cacheBust" name="cacheBust"><span>为每次下载追加随机参数</span></label></div>
           <p class="help" id="keepStatus">保活受浏览器和系统限制，不能保证锁屏后继续运行。签名地址请勿开启随机参数。</p>
           <button type="submit" class="btn btn-primary btn-block" id="startBtn" disabled>加载中…</button>
         </form>
         <div class="status-line" id="statusLine" role="status" aria-live="polite">正在初始化…</div>
+        <div class="download-recovery" id="downloadRecovery" hidden><p class="help">可先检测节点是否可读。CORS、DNS、TLS 或网络限制都可能导致连接失败，页面不会绕过浏览器安全检查。</p><button type="button" class="btn" id="chooseReadable">切换推荐节点</button></div>
         <div class="stats" aria-label="下载统计">
           <div class="stat"><span>总流量</span><strong id="vTotal">0 B</strong></div>
           <div class="stat"><span>实时速度</span><strong class="text-primary" id="vSpeed">0 B/s</strong></div>
@@ -80,16 +81,16 @@
 
     <section class="card" aria-labelledby="networkTitle">
       <div class="card-inner">
-        <div class="section-head"><h2 id="networkTitle">出口地址与连通性</h2><button type="button" class="btn btn-small" id="refreshNetwork">刷新本站信息</button></div>
-        <dl class="network-list"><div><dt>本站出口 IP</dt><dd id="ipCurrent">读取中…</dd></div><div><dt>边缘归属信息</dt><dd id="ipLocation">读取中…</dd></div><div><dt>本站首响应</dt><dd id="localLatency">—</dd></div><div><dt>国内 IP（ipip.net）</dt><dd id="ipcn">尚未查询</dd></div><div><dt>全球 IP（ipinfo.io）</dt><dd id="ipgb">尚未查询</dd></div><div><dt>百度响应</dt><dd id="laycn">尚未检测</dd></div><div><dt>Cloudflare 响应</dt><dd id="laygb">尚未检测</dd></div><div><dt>GitHub 响应</dt><dd id="laygh">尚未检测</dd></div><div><dt>YouTube 响应</dt><dd id="layyt">尚未检测</dd></div></dl>
-        <div class="network-actions"><button type="button" class="btn" id="queryExternalIp">查询多路出口 IP</button><button type="button" class="btn" id="checkConnectivity">检测第三方连通性</button></div>
-        <p class="help">第三方查询仅在你点击时执行，会向对应服务暴露出口 IP。连通性只能确认响应到达，不能确认跨域 HTTP 状态。本站 API 不保存 IP。</p>
+        <div class="section-head"><h2 id="networkTitle">出口地址与连通性</h2><button type="button" class="btn btn-small" id="refreshNetwork">立即刷新</button></div>
+        <dl class="network-list"><div><dt>当前出口 IP</dt><dd id="ipCurrent">等待检测…</dd></div><div><dt>IP 检测来源</dt><dd id="ipSource">—</dd></div><div><dt>出口归属信息</dt><dd id="ipLocation">—</dd></div><div><dt>本站首响应</dt><dd id="localLatency">—</dd></div><div><dt>IP 服务 A（ipip.net）</dt><dd id="ipcn">等待检测…</dd></div><div><dt>IP 服务 B（ipinfo / ipify）</dt><dd id="ipgb">等待检测…</dd></div><div><dt>百度响应</dt><dd id="laycn">等待检测…</dd></div><div><dt>Cloudflare 响应</dt><dd id="laygb">等待检测…</dd></div><div><dt>GitHub 响应</dt><dd id="laygh">等待检测…</dd></div><div><dt>YouTube 响应</dt><dd id="layyt">等待检测…</dd></div><div><dt>最近完成检测</dt><dd id="networkChecked">尚未检测</dd></div></dl>
+        <div class="network-actions"><label class="check-label"><input type="checkbox" id="autoNetwork" name="autoNetwork" checked><span>自动刷新（约 30 秒）</span></label></div>
+        <p class="help">打开页面即检测，后台或离线时暂停。第三方检测服务会看到出口 IP，可关闭自动刷新；静态页面自动回退，不把第三方结果冒充本站边缘信息。连通性只确认响应到达，不保证跨域 HTTP 成功。</p>
         <p id="networkStatus" class="help" role="status" aria-live="polite"></p>
       </div>
     </section>
 
     <details class="instructions"><summary>使用说明与安全边界</summary><p>仅用于你有权测试的网络和资源。更高并发不一定更快；小文件采样不能代表峰值带宽。统计为浏览器读取的响应体字节，不含协议开销；达到上限时仍可能有少量在途数据，因此不能作为计费硬上限。</p><p>地址配置只存于本机浏览器，不上传到后端。无论测试链接是安装包还是脚本，页面只读取字节，绝不会执行或安装。</p><p>节点名称中的“定向”等为原版历史标记，不保证当前可用，也不代表免流或计费承诺。请以运营商账单为准。</p></details>
-    <footer>Speedtext <span id="footerVersion" translate="no">3.0.0</span> · 原生图表，无第三方脚本 · <a href="https://github.com/wangsicong120/speedtext" target="_blank" rel="noopener noreferrer">GitHub 源码</a></footer>
+    <footer>Speedtext <span id="footerVersion" translate="no">3.1.0</span> · 原生图表，无第三方脚本 · <a href="https://github.com/wangsicong120/speedtext" target="_blank" rel="noopener noreferrer">GitHub 源码</a></footer>
     <noscript><p>请启用 JavaScript 后使用下载与节点检测功能。</p></noscript>
   </main>
 

@@ -11,6 +11,27 @@ test('invalid URLs never start a request', t => {
   let calls = 0; const engine = create(t, { fetchImpl: () => { calls++; } });
   assert.throws(() => engine.start({ url: 'http://127.0.0.1/file' })); assert.equal(calls, 0);
 });
+test('platform fetch is invoked without a DownloadEngine receiver', async t => {
+  let receiver;
+  const engine = create(t, { fetchImpl: async function () {
+    receiver = this; return new Response(new Uint8Array(1024));
+  } });
+  engine.start({ url: URL, threads: 1, maxBytes: 1024 });
+  await until(() => !engine.running); await engine.settled();
+  assert.equal(receiver, undefined); assert.equal(engine.snapshot(false).reason, 'limit');
+});
+test('flow and duration limits default to disabled and a long session still requires manual stop', async t => {
+  let now = 0, stream;
+  const engine = create(t, { now: () => now, fetchImpl: async (_url, { signal }) => {
+    stream = streamResponse(signal); return stream.response;
+  } });
+  engine.start({ url: URL, threads: 1 }); await until(() => !!stream);
+  assert.equal(engine.session.maxBytes, 0); assert.equal(engine.session.durationSeconds, 0);
+  assert.equal(engine.session.durationTimer, null);
+  now = 120000; stream.push(1024); await until(() => engine.snapshot(false).bytes === 1024);
+  assert.equal(engine.tick().running, true);
+  engine.stop(); await engine.settled(); assert.equal(engine.snapshot(false).reason, 'manual');
+});
 test('concurrency expands only after the first readable block and all connections abort', async t => {
   const streams = [], signals = [], urls = [];
   const engine = create(t, { fetchImpl: async (url, options) => {
