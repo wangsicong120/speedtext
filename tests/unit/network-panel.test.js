@@ -66,11 +66,13 @@ test('external locations stay bounded literal text, not HTML or unvalidated IP v
 });
 
 test('automatic startup makes only small monitoring requests and has one 30-second schedule', async t => {
-  const environment = create(t); await start(environment);
+  const info = [];
+  const environment = create(t, { onInfo: value => info.push(value) }); await start(environment);
   assert.equal(environment.panel.enabled, true);
   assert.equal(environment.node('ipCurrent').textContent, '198.51.100.8');
   assert.match(environment.node('ipSource').textContent, /第三方/);
   assert.match(environment.node('networkStatus').textContent, /本地模式已回退/);
+  assert.deepEqual(info.at(-1), { ip: '198.51.100.8', location: 'ZZ', organization: '', source: '第三方' });
   assert.equal(environment.calls.filter(call => call.url.startsWith('https://')).length, 6);
   assert(environment.calls.every(call => call.credentials === 'omit' && call.referrerPolicy === 'no-referrer'));
   assert(!environment.calls.some(call => call.url.includes('__down')));
@@ -99,12 +101,14 @@ test('platform timer callbacks are invoked without a class receiver', async t =>
 });
 
 test('Workers edge metadata takes precedence without mislabelling third-party results', async t => {
-  const environment = create(t, { fetchImpl: (url, options) => url === '/api/client' ?
-    Response.json({ source: 'cloudflare', ip: '203.0.113.20', country: 'ZZ', colo: 'TEST' }) : response(url, options) });
+  const info = [];
+  const environment = create(t, { onInfo: value => info.push(value), fetchImpl: (url, options) => url === '/api/client' ?
+    Response.json({ source: 'cloudflare', ip: '203.0.113.20', country: 'CN', region: '四川', city: '成都', organization: '中国电信', colo: 'TEST' }) : response(url, options) });
   await start(environment);
   assert.equal(environment.node('ipCurrent').textContent, '203.0.113.20');
   assert.equal(environment.node('ipSource').textContent, '本站边缘（Cloudflare）');
   assert.match(environment.node('ipgb').textContent, /198.51.100.8/);
+  assert.deepEqual(info.at(-1), { ip: '203.0.113.20', location: '四川 成都', organization: '中国电信', source: '本站边缘' });
 });
 
 test('static HTML instead of an API falls back to a labelled public IP and same-origin asset latency', async t => {
@@ -212,10 +216,12 @@ test('visible HTTP errors are warnings while opaque responses are only labelled 
 });
 
 test('all IP services failing stays usable and schedules only the next bounded round', async t => {
-  const environment = create(t, { fetchImpl: (url, options) => options.mode === 'cors' && url.startsWith('https://') ?
+  const info = [];
+  const environment = create(t, { onInfo: value => info.push(value), fetchImpl: (url, options) => options.mode === 'cors' && url.startsWith('https://') ?
     new Response('unavailable', { status: 503 }) : response(url, options) });
   await start(environment);
   assert.equal(environment.node('ipCurrent').textContent, '暂未测得出口 IP');
   assert.match(environment.node('networkStatus').textContent, /下载功能仍可使用/);
   assert.equal(environment.node('refreshNetwork').textContent, '立即刷新'); assert.equal(environment.timers.size, 1);
+  assert.equal(info.at(-1), null);
 });

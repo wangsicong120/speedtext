@@ -12,7 +12,10 @@ const $ = id => document.getElementById(id);
 const store = new NodeStore();
 const queue = new ProbeQueue();
 const chart = new RateChart($('chart'));
-const network = new NetworkPanel();
+const network = new NetworkPanel({
+  onLatency: latency => chart.setLatency(latency, document.visibilityState === 'visible' && !$('screenOff').open),
+  onInfo: info => chart.setNetworkInfo(info)
+});
 const keep = new KeepAlive($('keepAudio'), text => { $('keepStatus').textContent = text; });
 const engine = new DownloadEngine({ onState: engineState });
 const results = new Map();
@@ -37,6 +40,7 @@ function selectNode(item) {
   $('curName').textContent = node.name; $('curName').title = node.name;
   $('curUrl').textContent = node.url; $('curUrl').title = node.url;
   $('diyLink').value = node.url;
+  chart.setNode(node.name);
   fieldError('diyLink', 'linkError');
   return node;
 }
@@ -106,6 +110,7 @@ function displayStats(snapshot = engine.snapshot(false)) {
   $('vMbps').textContent = (snapshot.speed * 8 / 1000000).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) + ' Mbps';
   $('vAvg').textContent = formatSpeed(snapshot.average);
   $('elapsed').textContent = '已运行 ' + Math.floor(snapshot.elapsed).toLocaleString('zh-CN') + ' 秒';
+  chart.setSpeed(snapshot.speed, document.visibilityState === 'visible' && !$('screenOff').open);
   document.title = snapshot.running ? formatBytes(snapshot.bytes) + ' · ' + formatSpeed(snapshot.speed) + ' · 流量消耗器' : title;
 }
 

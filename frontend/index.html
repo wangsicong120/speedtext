@@ -67,15 +67,23 @@
     </section>
 
     <section class="card" aria-labelledby="chartTitle">
-      <div class="card-inner">
-        <div class="section-head"><h2 id="chartTitle">实时趋势</h2><span class="help">最近 60 秒</span></div>
-        <div class="chart-legend"><span class="legend-rate">下载速度 · MiB/s</span><span class="legend-latency">本站首响应 · ms</span></div>
-        <div id="chart" class="chart" role="img" aria-label="最近 60 秒的下载速率和本站 HTTP 首响应延迟折线图">
-          <svg viewBox="0 0 720 240" preserveAspectRatio="none" aria-hidden="true"><g class="chart-grid"><path d="M46 20H674M46 70H674M46 120H674M46 170H674M46 220H674"/></g><g id="chartLabels" class="chart-labels"></g><path id="rateArea" class="chart-area"/><path id="ratePath" class="chart-rate"/><path id="latencyPath" class="chart-latency"/><text x="46" y="238" class="chart-label" id="chartStart"></text><text x="674" y="238" text-anchor="end" class="chart-label" id="chartEnd"></text></svg>
-          <p id="chartEmpty" class="chart-empty">开始测试后显示下载趋势</p>
+      <h2 id="chartTitle" class="visually-hidden">实时趋势</h2>
+      <div id="chart" class="speedometer card-inner" role="img" aria-label="实时下载带宽仪表盘，开始测试后更新。">
+        <div class="gauge-dial">
+          <svg viewBox="0 0 420 328" aria-hidden="true">
+            <path class="gauge-track" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137"/>
+            <path id="gaugeArc" class="gauge-progress" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100" visibility="hidden"/>
+            <g id="gaugeTicks"></g>
+            <text id="gaugeValue" class="gauge-value" x="210" y="206" text-anchor="middle" font-size="100">0.0</text>
+            <text class="gauge-unit" x="210" y="263" text-anchor="middle">Mbps</text>
+          </svg>
         </div>
-        <p class="help">延迟是 HTTP 首响应时间，不是 ICMP Ping；后台或伪熄屏时暂停绘图，统计仍继续。</p>
-        <details class="chart-data" id="chartDetails"><summary>查看图表数据</summary><div class="table-wrap"><table><caption class="visually-hidden">本次测试最近 60 个采样点</caption><thead><tr><th scope="col">时间</th><th scope="col">下载速度</th><th scope="col">本站首响应</th></tr></thead><tbody id="chartTable"></tbody></table></div></details>
+        <p id="gaugeNode" class="gauge-node">正在加载节点…</p>
+        <div class="gauge-network" id="gaugeNetwork">
+          <span id="gaugeLatency" class="gauge-latency is-unavailable" title="本站 HTTP 首响应时间，并非 ICMP Ping">— ms</span>
+          <div class="gauge-network-info"><strong id="gaugeLocation" class="gauge-location">等待检测出口网络</strong><span id="gaugeProvider" class="gauge-provider" hidden></span></div>
+          <span id="gaugeSource" class="gauge-source" hidden></span>
+        </div>
       </div>
     </section>
 

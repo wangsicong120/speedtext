@@ -72,6 +72,59 @@ test('theme follows system settings and a manual choice survives reload', async 
   await expect(page.locator('html')).toHaveAttribute('data-theme', selected);
 });
 
+test('the live gauge uses Mbps, tracks the selected node and resets on stop without losing samples', async ({ page }) => {
+  await installStreams(page); await openApp(page);
+  await expect(page.locator('#gaugeValue')).toHaveText('0.0');
+  await expect(page.locator('.gauge-unit')).toHaveText('Mbps');
+  await expect(page.locator('#gaugeTicks text')).toHaveText(['0', '5', '10', '20', '50', '100', '200', '500', '1G', '2G', '5G']);
+  await expect(page.locator('#gaugeArc')).toHaveAttribute('visibility', 'hidden');
+  await expect(page.locator('#gaugeNode')).toHaveText(await page.locator('#curName').textContent());
+  await expect(page.locator('#gaugeLocation')).toHaveText('ZZ');
+  await expect(page.locator('#gaugeProvider')).toBeHidden();
+  await expect(page.locator('#gaugeSource')).toHaveText('第三方');
+  await expect(page.locator('#gaugeLatency')).toHaveText(/^\d+ms$/);
+
+  await configureDownload(page, { threads: 1 }); await page.locator('#startBtn').click();
+  await expect.poll(async () => Number(await page.locator('#gaugeValue').textContent())).toBeGreaterThan(0);
+  const values = await page.evaluate(() => ({
+    gauge: Number(document.getElementById('gaugeValue').textContent),
+    stats: Number(document.getElementById('vMbps').textContent.replace(/[^\d.]/g, '')),
+    offset: Number(document.getElementById('gaugeArc').getAttribute('stroke-dashoffset'))
+  }));
+  expect(Math.abs(values.gauge - values.stats)).toBeLessThanOrEqual(.06);
+  expect(values.offset).toBeGreaterThanOrEqual(0); expect(values.offset).toBeLessThan(100);
+  await expect(page.locator('#gaugeArc')).toHaveAttribute('visibility', 'visible');
+  await expect(page.locator('#gaugeNode')).toHaveText(await page.locator('#curName').textContent());
+  await expect(page.locator('#chart')).toHaveAttribute('aria-label', /实时下载带宽.*Mbps.*HTTP 首响应/);
+  await page.locator('#startBtn').click();
+  await expect(page.locator('#gaugeValue')).toHaveText('0.0');
+  await expect(page.locator('#gaugeArc')).toHaveAttribute('visibility', 'hidden');
+  await expect(page.locator('#gaugeTicks text')).toHaveCount(11);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await page.locator('#gaugeArc').evaluate(node => getComputedStyle(node).transitionDuration)).toBe('0s');
+});
+
+test('the gauge network bar shows detected edge metadata, not the reference image placeholders', async ({ page }) => {
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, options = {}) => {
+      const target = new URL(input instanceof Request ? input.url : input, location.href);
+      if (target.origin === location.origin && target.pathname === '/api/client') {
+        return Promise.resolve(Response.json({ source: 'cloudflare', ip: '203.0.113.20', country: 'CN',
+          region: '四川', city: '成都', organization: '中国电信', colo: 'TEST' }));
+      }
+      return nativeFetch(input, options);
+    };
+  });
+  await openApp(page);
+  await expect(page.locator('#gaugeLocation')).toHaveText('四川 成都');
+  await expect(page.locator('#gaugeProvider')).toHaveText('中国电信');
+  await expect(page.locator('#gaugeSource')).toHaveText('本站边缘');
+  await expect(page.locator('#gaugeNetwork')).toHaveAttribute('title', /203\.0\.113\.20/);
+  await expect(page.locator('#gaugeValue')).toHaveText('0.0');
+  await expectNoOverflow(page);
+});
+
 test('unsafe URLs, invalid limits and unbounded confirmation cannot start a download', async ({ page }) => {
   await installStreams(page); await openApp(page);
   for (const url of ['javascript:alert(1)', 'http://example.com/file', 'https://user:password@example.com/file', 'https://127.0.0.1/file']) {
@@ -178,6 +231,8 @@ test('custom node names remain literal text and persist without executing HTML',
   await expect(page.locator('#modalBody img')).toHaveCount(0);
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   await page.locator('button[data-action="select"]').click(); await expect(page.locator('#curName')).toHaveText(name);
+  await expect(page.locator('#gaugeNode')).toHaveText(name);
+  await expect(page.locator('#chart img')).toHaveCount(0);
   await page.reload(); await expect(page.locator('#curName')).toHaveText(name);
   expect(await page.evaluate(() => window.__xss)).toBeUndefined();
   await openConfig(page); await page.locator('#searchInput').fill('stream.speedtext.example');
@@ -315,9 +370,6 @@ test('pseudo-screen-off preserves counting and exported stats omit signed URL pa
   await page.locator('#screenBtn').click(); await expect(page.locator('#screenOff')).toBeVisible();
   await page.keyboard.press('Escape'); await expect(page.locator('#screenOff')).not.toBeVisible();
   await expect(page.locator('#statusLine')).toContainText('时长上限');
-  await expect(page.locator('#chartEmpty')).toBeHidden();
-  await page.locator('#chartDetails summary').click();
-  await expect(page.locator('#chartTable tr').first()).toBeVisible();
   const downloaded = page.waitForEvent('download'); await page.locator('#exportStats').click();
   const download = await downloaded, path = testInfo.outputPath('stats.json'); await download.saveAs(path);
   const text = await readFile(path, 'utf8'), data = JSON.parse(text);

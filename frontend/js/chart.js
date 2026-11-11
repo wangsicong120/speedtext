@@ -3,58 +3,113 @@ import { element, formatSpeed } from './utils.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const finite = value => Number.isFinite(value) && value >= 0 ? value : 0;
+export const GAUGE_SCALE = [0, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000];
+
+// The reference dial has equally spaced marks, not a linear 0–5 Gbps scale.
+export function gaugeProgress(mbps) {
+  const value = finite(mbps);
+  for (let index = 1; index < GAUGE_SCALE.length; index++) {
+    if (value <= GAUGE_SCALE[index]) {
+      const fraction = (value - GAUGE_SCALE[index - 1]) / (GAUGE_SCALE[index] - GAUGE_SCALE[index - 1]);
+      return (index - 1 + fraction) / (GAUGE_SCALE.length - 1);
+    }
+  }
+  return 1;
+}
 
 export class RateChart {
   constructor(root) {
     this.root = root;
     this.points = [];
+    this.speed = 0;
+    this.latency = null;
+    this.nodeName = '';
+    this.info = null;
+    this.value = root.querySelector('#gaugeValue');
+    this.arc = root.querySelector('#gaugeArc');
+    this.latencyNode = root.querySelector('#gaugeLatency');
     this.details = document.getElementById('chartDetails');
     this.details?.addEventListener('toggle', () => { if (this.details.open) this.renderTable(); });
+    this.renderScale();
     this.draw();
   }
 
-  clear() { this.points = []; this.draw(); }
+  clear() { this.points = []; this.speed = 0; this.draw(); }
+
+  setNode(name) {
+    this.nodeName = name;
+    const node = this.root.querySelector('#gaugeNode');
+    node.textContent = name; node.title = name;
+    this.drawGauge();
+  }
+
+  setSpeed(speed, draw = true) {
+    this.speed = finite(speed);
+    if (draw) this.drawGauge();
+  }
+
+  setLatency(latency, draw = true) {
+    this.latency = Number.isFinite(latency) && latency >= 0 ? latency : null;
+    if (draw) this.drawGauge();
+  }
+
+  setNetworkInfo(info) {
+    this.info = info;
+    const location = this.root.querySelector('#gaugeLocation');
+    const provider = this.root.querySelector('#gaugeProvider');
+    const source = this.root.querySelector('#gaugeSource');
+    location.textContent = info?.location || '暂未测得出口信息'; location.title = location.textContent;
+    provider.textContent = info?.organization || ''; provider.title = provider.textContent;
+    source.textContent = info?.source || '';
+    provider.hidden = !provider.textContent; source.hidden = !source.textContent;
+    this.root.querySelector('#gaugeNetwork').title = [info?.ip, info?.location, info?.organization, info?.source].filter(Boolean).join(' · ');
+    this.drawGauge();
+  }
 
   push(speed, latency, at = Date.now(), draw = true) {
-    this.points.push({ at, speed: finite(speed), latency: Number.isFinite(latency) && latency >= 0 ? latency : null });
+    const point = { at, speed: finite(speed), latency: Number.isFinite(latency) && latency >= 0 ? latency : null };
+    this.points.push(point);
+    this.speed = point.speed; this.latency = point.latency;
     if (this.points.length > LIMITS.chartPoints) this.points.shift();
     if (draw) this.draw();
   }
 
-  draw() {
-    const data = this.points;
-    const maxRate = Math.max(1, ...data.map(point => point.speed / 1048576)) * 1.1;
-    const maxLatency = Math.max(100, ...data.map(point => point.latency ?? 0)) * 1.1;
-    const x = index => 46 + index * 628 / (LIMITS.chartPoints - 1);
-    const y = (value, max) => 220 - value / max * 200;
-    const rate = data.map((point, index) => `${index ? 'L' : 'M'}${x(index).toFixed(1)},${y(point.speed / 1048576, maxRate).toFixed(1)}`).join(' ');
-    let segment = false;
-    const latency = data.map((point, index) => {
-      if (point.latency === null) { segment = false; return ''; }
-      const command = segment ? 'L' : 'M'; segment = true;
-      return `${command}${x(index).toFixed(1)},${y(point.latency, maxLatency).toFixed(1)}`;
-    }).join(' ');
-    this.root.querySelector('#ratePath').setAttribute('d', rate);
-    this.root.querySelector('#rateArea').setAttribute('d', rate ? `${rate} L${x(data.length - 1).toFixed(1)},220 L46,220 Z` : '');
-    this.root.querySelector('#latencyPath').setAttribute('d', latency);
-    const labels = this.root.querySelector('#chartLabels');
-    labels.replaceChildren();
-    for (let index = 0; index <= 4; index++) {
-      for (const [left, max] of [[true, maxRate], [false, maxLatency]]) {
-        const text = document.createElementNS(SVG_NS, 'text');
-        text.setAttribute('x', left ? '39' : '681');
-        text.setAttribute('y', String(224 - index * 50));
-        text.setAttribute('text-anchor', left ? 'end' : 'start');
-        text.textContent = left ? (max * index / 4).toFixed(1) : String(Math.round(max * index / 4));
-        labels.append(text);
-      }
+  renderScale() {
+    const ticks = this.root.querySelector('#gaugeTicks');
+    ticks.replaceChildren();
+    for (const [index, value] of GAUGE_SCALE.entries()) {
+      const angle = 135 + index * 270 / (GAUGE_SCALE.length - 1);
+      const radians = angle * Math.PI / 180;
+      const x = radius => 210 + Math.cos(radians) * radius;
+      const y = radius => 191 + Math.sin(radians) * radius;
+      const tick = document.createElementNS(SVG_NS, 'line');
+      tick.setAttribute('class', 'gauge-tick');
+      tick.setAttribute('x1', x(149).toFixed(3)); tick.setAttribute('y1', y(149).toFixed(3));
+      tick.setAttribute('x2', x(137).toFixed(3)); tick.setAttribute('y2', y(137).toFixed(3));
+      const label = document.createElementNS(SVG_NS, 'text');
+      label.setAttribute('class', 'gauge-tick-label');
+      label.setAttribute('x', x(121).toFixed(3)); label.setAttribute('y', y(121).toFixed(3));
+      label.setAttribute('text-anchor', 'middle');
+      label.setAttribute('transform', `rotate(${angle - 270} ${x(121).toFixed(3)} ${y(121).toFixed(3)})`);
+      label.textContent = value >= 1000 ? value / 1000 + 'G' : String(value);
+      ticks.append(tick, label);
     }
-    const time = value => new Date(value).toLocaleTimeString('zh-CN', { hour12: false });
-    this.root.querySelector('#chartStart').textContent = data.length ? time(data[0].at) : '';
-    this.root.querySelector('#chartEnd').textContent = data.length ? time(data.at(-1).at) : '';
-    document.getElementById('chartEmpty').hidden = data.length > 0;
-    const latest = data.at(-1);
-    this.root.setAttribute('aria-label', latest ? `本次最近 ${data.length} 个采样点。最新下载速度 ${formatSpeed(latest.speed)}，本站首响应 ${latest.latency ?? '未测得'} 毫秒。可在下方查看数据表。` : '尚无下载数据，开始测试后显示趋势。');
+  }
+
+  drawGauge() {
+    const mbps = this.speed / 125000;
+    const value = mbps.toFixed(1);
+    this.value.textContent = value;
+    this.value.setAttribute('font-size', String(Math.min(100, 340 / value.length)));
+    this.arc.setAttribute('stroke-dashoffset', (100 - gaugeProgress(mbps) * 100).toFixed(3));
+    this.arc.setAttribute('visibility', this.speed > 0 ? 'visible' : 'hidden');
+    this.latencyNode.textContent = this.latency === null ? '— ms' : Math.round(this.latency) + 'ms';
+    this.latencyNode.classList.toggle('is-unavailable', this.latency === null);
+    this.root.setAttribute('aria-label', `实时下载带宽 ${value} Mbps，节点 ${this.nodeName || '加载中'}，本站 HTTP 首响应 ${this.latency === null ? '未测得' : Math.round(this.latency) + ' 毫秒'}。${this.info ? [this.info.location, this.info.organization, this.info.source].filter(Boolean).join('，') + '。' : ''}${this.points.length ? `本次已记录 ${this.points.length} 个采样点。` : '开始测试后更新。'}`);
+  }
+
+  draw() {
+    this.drawGauge();
     if (this.details?.open) this.renderTable();
   }
 

@@ -65,13 +65,14 @@ export function parseExternalIp(text, json = false) {
     const info = JSON.parse(text);
     if (!info || Array.isArray(info) || !isIpAddress(info.ip)) throw new Error('服务未返回有效 IP');
     const location = [info.city, info.region, info.country, info.org].map(cleanText).filter(Boolean).join(' · ');
-    return { ip: info.ip, location, message: [info.ip, location].filter(Boolean).join(' · ') };
+    const locationLabel = [info.region, info.city].map(cleanText).filter(Boolean).join(' ') || cleanText(info.country);
+    return { ip: info.ip, location, locationLabel, organization: cleanText(info.org), message: [info.ip, location].filter(Boolean).join(' · ') };
   }
   const message = cleanText(text.replace(/\s+/g, ' ').trim());
   const ip = isIpAddress(message) ? message : message.match(/IP\s*[:：]\s*([a-f0-9:.]+)/i)?.[1];
   if (!isIpAddress(ip)) throw new Error('服务未返回有效 IP');
   const location = message.includes('来自') ? message.split(/来自\s*[:：]\s*/)[1] || '' : '';
-  return { ip, message, location };
+  return { ip, message, location, locationLabel: location, organization: '' };
 }
 
 const targets = [
@@ -80,12 +81,12 @@ const targets = [
 ];
 
 export class NetworkPanel {
-  constructor({ onLatency = () => {}, fetchImpl = globalThis.fetch, documentRef = globalThis.document,
+  constructor({ onLatency = () => {}, onInfo = () => {}, fetchImpl = globalThis.fetch, documentRef = globalThis.document,
     isOnline = () => globalThis.navigator.onLine, now = () => performance.now(), wallNow = () => Date.now(),
     intervalMs = LIMITS.networkRefreshMs, requestTimeoutMs = 8000, connectivityTimeoutMs = 5000,
     setTimer = setTimeout, clearTimer = clearTimeout, read = readStorage, write = writeStorage } = {}) {
     // 原生 Window API 若作为类成员直接调用会产生 Illegal invocation。
-    this.onLatency = onLatency; this.fetch = (...args) => fetchImpl(...args); this.document = documentRef;
+    this.onLatency = onLatency; this.onInfo = onInfo; this.fetch = (...args) => fetchImpl(...args); this.document = documentRef;
     this.isOnline = isOnline; this.now = now; this.wallNow = wallNow;
     this.intervalMs = intervalMs; this.requestTimeoutMs = requestTimeoutMs;
     this.connectivityTimeoutMs = connectivityTimeoutMs;
@@ -195,6 +196,8 @@ export class NetworkPanel {
       const info = JSON.parse(text);
       if (!info || !['cloudflare', 'local'].includes(info.source)) throw new Error('API 响应无效');
       return { available: true, source: info.source, ip: isIpAddress(info.ip) ? info.ip : null, latency,
+        locationLabel: [info.region, info.city].map(cleanText).filter(Boolean).join(' ') || cleanText(info.country),
+        organization: cleanText(info.organization),
         location: [info.country, info.region, info.city, info.organization, info.colo].map(cleanText).filter(Boolean).join(' · ') };
     } catch (error) {
       if (signal.aborted) throw abortError();
@@ -279,15 +282,20 @@ export class NetworkPanel {
         if (client.source === 'cloudflare' && client.ip) {
           this.output('ipCurrent', client.ip, 'ok'); this.output('ipSource', '本站边缘（Cloudflare）');
           this.output('ipLocation', client.location || '暂无归属信息');
+          this.onInfo({ ip: client.ip, location: client.locationLabel || '暂无归属信息', organization: client.organization, source: '本站边缘' });
           this.sourceNote = '当前 IP 来自本站边缘请求。';
         } else if (external) {
           this.output('ipCurrent', external.ip, 'ok'); this.output('ipSource', '第三方 · ' + external.provider);
           this.output('ipLocation', external.location || (domestic.ok && domestic.ip === external.ip ? domestic.location : '') || '该服务未提供归属信息');
+          this.onInfo({ ip: external.ip,
+            location: external.locationLabel || (domestic.ok && domestic.ip === external.ip ? domestic.location : '') || '暂无归属信息',
+            organization: external.organization, source: '第三方' });
           this.sourceNote = client.source === 'local' ? '本地模式已回退到第三方 IP 检测，未使用伪造转发头。' :
             client.available ? '本站边缘未提供有效 IP，已回退到第三方检测。' : '静态页面或本站 API 暂不可用，已使用第三方 IP 检测。';
         } else {
           this.output('ipCurrent', '暂未测得出口 IP', 'warn'); this.output('ipSource', '检测失败');
           this.output('ipLocation', '可稍后刷新，或检查网络 / 扩展限制');
+          this.onInfo(null);
           this.sourceNote = 'IP 服务暂未返回可读结果，下载功能仍可使用。';
         }
         for (const result of connections) this.output(result.id, result.message, result.ok ? 'ok' : 'warn');
