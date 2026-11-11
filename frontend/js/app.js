@@ -1,7 +1,7 @@
 import { LIMITS, VERSION } from '../../shared/limits.js';
 import { DownloadEngine } from './download-engine.js';
 import { NodeStore } from './node-store.js';
-import { ProbeQueue, sanitizeProbeResult } from './probe.js';
+import { ProbeQueue, fastestProbeItem, rankProbeItems, sanitizeProbeResult } from './probe.js';
 import { RateChart } from './chart.js';
 import { NetworkPanel } from './network.js';
 import { KeepAlive } from './keepalive.js';
@@ -19,6 +19,7 @@ const results = new Map();
 const rowResults = new Map();
 const groupOpen = new Map();
 let searchTimer, screenTimer, ticker = null, lastHeartbeat = 0, probeSequence = 0, runInfo = null;
+let sortedResults = false;
 const title = document.title;
 
 function status(text, kind = '') {
@@ -91,6 +92,9 @@ function controls() {
   $('btnDetect').disabled = running || detecting;
   $('btnDetectView').disabled = running || detecting;
   $('btnDetectStop').disabled = !detecting;
+  $('btnSortSpeed').disabled = detecting || (!results.size && !sortedResults);
+  $('btnSortSpeed').textContent = sortedResults ? '恢复分组' : '按速度排序';
+  $('btnSortSpeed').setAttribute('aria-pressed', String(sortedResults));
   for (const button of $('modalBody').querySelectorAll('button[data-action]')) {
     button.disabled = button.dataset.action === 'probe' ? running || detecting : button.dataset.action === 'select' ? running : false;
   }
@@ -213,10 +217,25 @@ function nodeRow(item) {
 function renderConfig() {
   const query = $('searchInput').value;
   const groups = store.groups(query), all = store.all(), unique = deduplicate(all);
+  const shown = deduplicate(groups.flatMap(group => group.items));
   $('mSub').textContent = `${all.length} 条 · ${unique.length} 个唯一地址 · ${groups.length} 个匹配分组`;
   $('btnRestore').disabled = store.hidden.size === 0;
   rowResults.clear();
   const fragment = document.createDocumentFragment();
+  if (sortedResults) {
+    const ordered = rankProbeItems(shown, results);
+    if (!ordered.length) fragment.append(element('p', 'empty', '没有匹配节点。试试缩短搜索词，或添加自定义 HTTPS 地址。'));
+    else {
+      const details = element('details', 'node-group');
+      const summary = element('summary', '', '实测速度排序');
+      summary.append(element('span', 'group-count', `${ordered.length} 条 · 完整采样优先，小文件与失败项置后`));
+      const body = element('div', 'node-items');
+      for (const item of ordered) body.append(nodeRow(item));
+      details.append(summary, body); details.open = true;
+      fragment.append(details);
+    }
+    $('modalBody').replaceChildren(fragment); controls(); return;
+  }
   for (const [index, group] of groups.entries()) {
     const details = element('details', 'node-group');
     const summary = element('summary', '', group.name);
@@ -297,16 +316,20 @@ $('addUrl').addEventListener('input', () => fieldError('addUrl', 'addError'));
 
 function saveResults() { writeStorage('tk_detect_v3', Object.fromEntries(results)); }
 
-async function runProbe(list) {
+async function runProbe(list, { batch = false } = {}) {
   if (engine.running || queue.running) return;
   const unique = deduplicate(list);
   if (!unique.length) { notice('没有可检测的节点，请添加节点或调整搜索。'); return; }
   const budget = formatBytes(unique.length * LIMITS.probeMaxBytes);
-  if (!window.confirm(`即将检测 ${unique.length} 个唯一地址。\n每条最多 8 MiB / 8 秒，4 并发；理论响应体预算 ${budget}。\n在途数据和协议开销可能使实际流量略高。仅测试你有权使用的资源。\n确定开始吗？`)) return;
+  const automatic = batch;
+  if (!window.confirm(`即将检测 ${unique.length} 个唯一地址。\n每条最多 8 MiB / 8 秒，4 并发；理论响应体预算 ${budget}。\n在途数据和协议开销可能使实际流量略高。仅测试你有权使用的资源。` +
+      (automatic ? '\n全部完成后将按实测速度排列，并自动选择最快的可读地址；不会自动开始下载。' : '') +
+      '\n确定开始吗？')) return;
   const sequence = ++probeSequence;
+  let outcome = null;
   for (const item of unique) { results.delete(item.url); paintUrl(item.url, { status: 'queued' }); }
   try {
-    await queue.run(unique, {
+    outcome = await queue.run(unique, {
       onProgress: progress => {
         $('detectProgress').max = Math.max(1, progress.total); $('detectProgress').value = progress.completed;
         $('detectInfo').textContent = `${progress.running ? '检测中' : progress.cancelled ? '已停止' : '检测完成'} ${progress.completed} / ${progress.total} · 已读取 ${formatBytes(progress.bytes)} · 理论预算 ${budget}`;
@@ -317,14 +340,34 @@ async function runProbe(list) {
   } catch { if (sequence === probeSequence) notice('检测未完成，请停止后重新尝试。'); }
   finally {
     if (sequence === probeSequence) {
-      for (const item of unique) paintUrl(item.url, results.get(item.url));
+      const complete = outcome && !outcome.cancelled && outcome.completed === outcome.total;
+      if (automatic && complete) {
+        const fastest = fastestProbeItem(unique, results);
+        sortedResults = true;
+        if (fastest) {
+          const result = results.get(fastest.url);
+          selectNode(fastest);
+          notice(`检测完成：已按实测速度排列，并自动选择“${fastest.name}”（${result.status === 'ok' ? '完整采样' : '小文件，速度仅供参考'} · ${formatSpeed(result.speed)}）作为测速地址。`);
+          status('已自动选择检测中最快的节点；不会自动开始下载。');
+        } else notice('检测完成：已按实测速度排列；没有可用的采样结果，未自动切换测速地址。');
+        renderConfig();
+      } else {
+        if (automatic && outcome?.cancelled) notice('检测已停止或未完成，未自动切换测速地址。');
+        if (sortedResults) renderConfig();
+        else for (const item of unique) paintUrl(item.url, results.get(item.url));
+      }
       saveResults(); controls();
     }
   }
 }
-$('btnDetect').addEventListener('click', () => runProbe(store.all()));
-$('btnDetectView').addEventListener('click', () => runProbe(store.all($('searchInput').value)));
+$('btnDetect').addEventListener('click', () => runProbe(store.all(), { batch: true }));
+$('btnDetectView').addEventListener('click', () => runProbe(store.all($('searchInput').value), { batch: true }));
 $('btnDetectStop').addEventListener('click', () => { queue.stop(); saveResults(); controls(); });
+$('btnSortSpeed').addEventListener('click', () => {
+  sortedResults = !sortedResults;
+  renderConfig();
+  notice(sortedResults ? '已按实测速度排列；小文件与未完成采样置后。' : '已恢复按原分组显示。');
+});
 
 async function showCopy(text) {
   if (await copyText(text)) { notice('已复制到剪贴板。'); return; }

@@ -11,6 +11,25 @@ export function sanitizeProbeResult(value) {
     firstByteMs: value.firstByteMs === null ? null : number(value.firstByteMs), sampledAt };
 }
 
+// 完整采样优先，其次是小文件和未完成项；同一层级内按实测速度降序，速度相同保留原顺序。
+const probeTier = result => result?.status === 'ok' ? 2 : result?.status === 'small' ? 1 : 0;
+const probeSpeed = result => Number.isFinite(result?.speed) && result.speed > 0 ? result.speed : 0;
+
+export function rankProbeItems(items, results) {
+  return items.map((item, index) => ({ item, index, result: results.get(item.url) }))
+    .sort((a, b) => {
+      const tier = probeTier(b.result) - probeTier(a.result);
+      if (tier) return tier;
+      if (!probeTier(a.result)) return a.index - b.index;
+      return probeSpeed(b.result) - probeSpeed(a.result) || a.index - b.index;
+    })
+    .map(entry => entry.item);
+}
+
+export function fastestProbeItem(items, results) {
+  return rankProbeItems(items, results).find(item => probeTier(results.get(item.url)) > 0) || null;
+}
+
 export async function probeDownload(item, { fetchImpl = globalThis.fetch, now = () => performance.now(),
   signal, maxBytes = LIMITS.probeMaxBytes, timeoutMs = LIMITS.probeTimeoutMs, cacheBust = false } = {}) {
   const controller = new AbortController();

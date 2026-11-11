@@ -225,6 +225,88 @@ test('filtered sampling deduplicates, cancels on close, and can restart without 
   await page.locator('#closeCopy').click(); await expect(page.locator('#configDialog')).toBeVisible();
 });
 
+test('batch sampling ranks by measured speed and selects the fastest only after completion', async ({ page }) => {
+  // 本地受控流：fast/medium 都超过 64 KiB，tiny 为小文件；用于验证排序层级和自动选择。
+  await page.addInitScript(() => {
+    const nativeFetch = window.fetch.bind(window);
+    const profiles = new Map([
+      ['https://fast.speedtext.example', { chunks: 18, interval: 20 }],
+      ['https://medium.speedtext.example', { chunks: 18, interval: 90 }],
+      ['https://tiny.speedtext.example', { chunks: 0 }]
+    ]);
+    window.fetch = async (input, options = {}) => {
+      const target = new URL(input instanceof Request ? input.url : input, location.href);
+      const profile = profiles.get(target.origin);
+      if (!profile) return nativeFetch(input, options);
+      if (!profile.chunks) return new Response(new Uint8Array(120));
+      const signal = options.signal;
+      let sent = 0, timer = 0, controller;
+      const stream = new ReadableStream({
+        start(value) {
+          controller = value;
+          if (window.__stallProbe) return;
+          const push = () => {
+            if (signal?.aborted) { try { value.error(new DOMException('Aborted', 'AbortError')); } catch {} return; }
+            if (sent >= profile.chunks) { try { value.close(); } catch {} return; }
+            sent++; value.enqueue(new Uint8Array(65536));
+            timer = setTimeout(push, profile.interval);
+          };
+          timer = setTimeout(push, profile.interval);
+        },
+        cancel() { clearTimeout(timer); }
+      });
+      signal?.addEventListener('abort', () => {
+        clearTimeout(timer);
+        try { controller.error(new DOMException('Aborted', 'AbortError')); } catch {}
+      }, { once: true });
+      const response = new Response(stream);
+      Object.defineProperty(response, 'url', { value: target.href });
+      return response;
+    };
+  });
+  const addNode = async (name, url) => {
+    await page.locator('#btnAdd').click();
+    await page.locator('#addName').fill(name); await page.locator('#addUrl').fill(url);
+    await page.locator('#btnAddOk').click();
+    await expect(page.locator('#configNotice')).toContainText('已添加');
+  };
+  await openApp(page); await openConfig(page);
+  await addNode('E2E fast', 'https://fast.speedtext.example/file');
+  await addNode('E2E medium', 'https://medium.speedtext.example/file');
+  await addNode('E2E tiny', 'https://tiny.speedtext.example/file');
+  await page.locator('#searchInput').fill('E2E');
+  await expect(page.locator('.node-row')).toHaveCount(3);
+
+  const messages = []; acceptNextConfirm(page, messages);
+  await page.locator('#btnDetectView').click();
+  await expect(page.locator('#detectInfo')).toContainText('检测完成 3 / 3', { timeout: 20000 });
+  expect(messages[0]).toContain('按实测速度排列');
+  await expect(page.locator('#configNotice')).toContainText('自动选择“E2E fast”');
+  await expect(page.locator('.node-name')).toHaveText(['E2E fast', 'E2E medium', 'E2E tiny']);
+  await expect(page.locator('#curName')).toHaveText('E2E fast');
+  await expect(page.locator('#curUrl')).toHaveText('https://fast.speedtext.example/file');
+  await expect(page.locator('#btnSortSpeed')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.node-row').first()).toHaveClass(/current/);
+
+  await page.locator('#btnSortSpeed').click();
+  await expect(page.locator('#btnSortSpeed')).toHaveText('按速度排序');
+  await page.locator('.node-row').filter({ hasText: 'E2E tiny' }).locator('button[data-action="select"]').click();
+  await expect(page.locator('#curName')).toHaveText('E2E tiny');
+  await expect(page.locator('#configDialog')).not.toBeVisible();
+
+  await page.evaluate(() => { window.__stallProbe = true; });
+  await openConfig(page);
+  await page.locator('#searchInput').fill('E2E');
+  await expect(page.locator('.node-row')).toHaveCount(3);
+  acceptNextConfirm(page); await page.locator('#btnDetectView').click();
+  await expect(page.locator('#detectInfo')).toContainText('检测中');
+  await page.locator('#btnDetectStop').click();
+  await expect(page.locator('#detectInfo')).toContainText('已停止', { timeout: 10000 });
+  await expect(page.locator('#configNotice')).toContainText('未自动切换测速地址');
+  await expect(page.locator('#curName')).toHaveText('E2E tiny');
+  await expect(page.locator('#curUrl')).toHaveText('https://tiny.speedtext.example/file');
+});
+
 test('pseudo-screen-off preserves counting and exported stats omit signed URL parameters', async ({ page }, testInfo) => {
   await installStreams(page); await openApp(page);
   await configureDownload(page, { threads: 1, maxMiB: 0, duration: 3 });

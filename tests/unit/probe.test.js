@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { probeDownload, ProbeQueue, sanitizeProbeResult } from '../../frontend/js/probe.js';
+import { probeDownload, ProbeQueue, fastestProbeItem, rankProbeItems, sanitizeProbeResult } from '../../frontend/js/probe.js';
 import { until, pendingFetch, streamResponse } from './helpers.js';
 
 const item = { name: 'Fixture', url: 'https://download.example.com/file' };
@@ -63,4 +63,31 @@ test('persisted results reject malformed shapes and strip unrecognized fields', 
   assert.equal(sanitizeProbeResult({ ...success, sampledAt: 'invalid' }), null);
   assert.equal(sanitizeProbeResult({ ...success, bytes: Infinity }).bytes, 0);
   assert.equal(sanitizeProbeResult({ ...success, executable: 'unsafe' }).executable, undefined);
+});
+test('ranking puts reliable samples first, then small files and failures', () => {
+  const items = ['a', 'b', 'c', 'd'].map(name => ({ name, url: 'https://' + name + '.example/file' }));
+  const results = new Map([
+    [items[0].url, { ...success, status: 'small', speed: 9000 }],
+    [items[1].url, { ...success, status: 'ok', speed: 2000 }],
+    [items[2].url, { ...success, status: 'ok', speed: 8000 }],
+    [items[3].url, { ...success, status: 'error', speed: 0 }]
+  ]);
+  assert.deepEqual(rankProbeItems(items, results).map(item => item.name), ['c', 'b', 'a', 'd']);
+  assert.equal(fastestProbeItem(items, results).name, 'c');
+});
+test('fastest item falls back to a readable small file and never selects failures', () => {
+  const items = ['small', 'failed'].map(name => ({ name, url: 'https://' + name + '.example/file' }));
+  const results = new Map([
+    [items[0].url, { ...success, status: 'small', speed: 300 }],
+    [items[1].url, { ...success, status: 'timeout', speed: 900 }]
+  ]);
+  assert.equal(fastestProbeItem(items, results).name, 'small');
+  results.set(items[0].url, { ...success, status: 'error', speed: 0 });
+  assert.equal(fastestProbeItem(items, results), null);
+  assert.deepEqual(rankProbeItems(items, results).map(item => item.name), ['small', 'failed']);
+});
+test('equal speeds keep their original order', () => {
+  const items = ['a', 'b', 'c'].map(name => ({ name, url: 'https://' + name + '.example/file' }));
+  const results = new Map(items.map(item => [item.url, { ...success, speed: 1000 }]));
+  assert.deepEqual(rankProbeItems(items, results).map(item => item.name), ['a', 'b', 'c']);
 });

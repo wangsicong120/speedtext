@@ -39,7 +39,7 @@
 
 ### 部署后的最小检查
 
-- `/api/health` 返回 `{"ok":true,"version":"3.1.0"}`，`Cache-Control: no-store`；`/api/config` 的默认流量与时长限制均为 `0`。
+- `/api/health` 返回 `{"ok":true,"version":"3.2.0"}`，`Cache-Control: no-store`；`/api/config` 的默认流量与时长限制均为 `0`。
 - `/` 返回完整页面，带 CSP、`nosniff`、`DENY`、`no-referrer`；HTTPS 响应另带 HSTS。
 - `/api/client` 能显示本站出口信息；跨站 API 请求失败，`/api/download` 为 404。
 - 初次打开自动发起小型 IP/连通性检测，不启动下载；完成后约 30 秒刷新，关闭自动刷新后不再轮询，后台或离线暂停。
