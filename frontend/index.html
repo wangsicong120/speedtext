@@ -37,7 +37,7 @@
           <div class="form-group">
             <label for="diyLink">下载地址</label>
             <input type="url" id="diyLink" name="downloadUrl" class="form-control" placeholder="https://example.com/file.bin…" autocomplete="off" inputmode="url" spellcheck="false" aria-describedby="linkHelp linkError">
-            <p class="help" id="linkHelp">浏览器直连目标，需要支持 CORS。首次推荐 Cloudflare 测速节点；历史节点可先在“选择节点”中检测，后端不代理下载。</p>
+            <p class="help" id="linkHelp">浏览器直连目标，需要支持 CORS。首次默认使用列表首个地址；可先在“选择节点”中检测可读性，后端不代理下载。</p>
             <p class="field-error" id="linkError" role="status" aria-live="polite" hidden></p>
           </div>
           <div class="settings-grid">
@@ -55,7 +55,7 @@
           <button type="submit" class="btn btn-primary btn-block" id="startBtn" disabled>加载中…</button>
         </form>
         <div class="status-line" id="statusLine" role="status" aria-live="polite">正在初始化…</div>
-        <div class="download-recovery" id="downloadRecovery" hidden><p class="help">可先检测节点是否可读。CORS、DNS、TLS 或网络限制都可能导致连接失败，页面不会绕过浏览器安全检查。</p><button type="button" class="btn" id="chooseReadable">切换推荐节点</button></div>
+        <div class="download-recovery" id="downloadRecovery" hidden><p class="help">可先检测节点是否可读。CORS、DNS、TLS 或网络限制都可能导致连接失败，页面不会绕过浏览器安全检查。</p><button type="button" class="btn" id="chooseReadable">切换默认节点</button></div>
         <div class="stats" aria-label="下载统计">
           <div class="stat"><span>总流量</span><strong id="vTotal">0 B</strong></div>
           <div class="stat"><span>实时速度</span><strong class="text-primary" id="vSpeed">0 B/s</strong></div>
@@ -104,7 +104,7 @@
 
   <dialog id="configDialog" class="config-dialog" aria-labelledby="configTitle">
     <div class="modal-head"><div><h2 id="configTitle">地址配置与检测</h2><p id="mSub" class="help"></p></div><button type="button" class="icon-btn" id="closeConfig" aria-label="关闭地址配置">×</button></div>
-    <div class="search-row"><label class="visually-hidden" for="searchInput">搜索名称、地址或分组</label><input type="search" id="searchInput" name="search" class="form-control" placeholder="搜索名称 / 地址 / 分组…" autocomplete="off"><button type="button" class="btn" id="btnAdd">添加自定义</button><button type="button" class="btn" id="btnRestore">恢复隐藏</button></div>
+    <div class="search-row"><label class="visually-hidden" for="searchInput">搜索名称或地址</label><input type="search" id="searchInput" name="search" class="form-control" placeholder="搜索名称 / 地址…" autocomplete="off"><button type="button" class="btn" id="btnAdd">添加自定义</button><button type="button" class="btn" id="btnRestore">恢复隐藏</button></div>
     <form id="addForm" class="add-row" hidden novalidate><div><label for="addName">名称（可选）</label><input id="addName" name="customNodeName" class="form-control" maxlength="120" placeholder="例如：我的测速节点…" autocomplete="off"></div><div><label for="addUrl">HTTPS 下载地址</label><input type="url" id="addUrl" name="customNodeUrl" class="form-control" placeholder="https://example.com/file.bin…" autocomplete="off" inputmode="url" spellcheck="false" aria-describedby="addError"></div><button type="submit" class="btn btn-primary" id="btnAddOk">添加</button><button type="button" class="btn" id="btnAddCancel">取消</button><p id="addError" class="field-error" role="status" aria-live="polite" hidden></p></form>
     <div class="detect-controls"><button type="button" class="btn btn-primary" id="btnDetect">检测全部</button><button type="button" class="btn" id="btnDetectView">检测筛选结果</button><button type="button" class="btn btn-danger" id="btnDetectStop" disabled>停止检测</button><button type="button" class="btn" id="btnCopyResult">复制结果</button><button type="button" class="btn" id="btnSortSpeed" aria-pressed="false" disabled>按速度排序</button></div>
     <div class="detect-status"><progress id="detectProgress" max="100" value="0" aria-label="地址检测进度"></progress><span id="detectInfo" role="status" aria-live="polite">每条最多 8 MiB / 8 秒，4 并发；全部完成后按实测速度排列并自动选择最快的可读地址。</span></div>

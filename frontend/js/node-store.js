@@ -1,4 +1,5 @@
-import { DEFAULT_GROUPS, RECOMMENDED_DOWNLOAD_URL } from './nodes.js';
+import { CUSTOM_DOWNLOAD_NODES, DEFAULT_NODES, NODE_CATALOG_REVISION,
+  RECOMMENDED_DOWNLOAD_URL, REMOVED_DOWNLOAD_URLS } from './nodes.js';
 import { LIMITS } from '../../shared/limits.js';
 import { deduplicate, normalizeUrl, readStorage, writeStorage } from './utils.js';
 
@@ -11,16 +12,36 @@ export function sanitizeNode(item) {
   } catch { return null; }
 }
 
+const removedUrls = new Set(REMOVED_DOWNLOAD_URLS.map(normalizeUrl));
+const companyNames = new Map(CUSTOM_DOWNLOAD_NODES.map(item => [normalizeUrl(item.url), item.name]));
+function renameLegacyNode(node) {
+  const name = node?.name.startsWith('自定义下载·') && companyNames.get(node.url);
+  return name ? { ...node, name } : node;
+}
+
 export class NodeStore {
-  constructor({ read = readStorage, write = writeStorage, groups = DEFAULT_GROUPS } = {}) {
+  constructor({ read = readStorage, write = writeStorage, nodes = DEFAULT_NODES } = {}) {
     this.write = write;
     this.persistent = true;
-    this.defaults = groups.map(group => ({ name: group.name, items: group.items.map(sanitizeNode).filter(Boolean) }));
+    this.defaults = nodes.map(sanitizeNode).filter(Boolean);
     const custom = read('tk_custom', []), hidden = read('tk_hidden', []);
     this.custom = Array.isArray(custom) ? deduplicate(custom.slice(0, LIMITS.maxCustomLinks).map(sanitizeNode).filter(Boolean)) : [];
-    const known = new Set(this.defaults.flatMap(group => group.items.map(item => item.url)));
+    const known = new Set(this.defaults.map(item => item.url));
     this.hidden = new Set(Array.isArray(hidden) ? hidden.filter(url => typeof url === 'string' && known.has(url)) : []);
-    this.current = sanitizeNode(read('tk_current', null)) || this.recommended();
+    const storedCurrent = sanitizeNode(read('tk_current', null));
+    const migrate = read('tk_node_catalog', null) !== NODE_CATALOG_REVISION;
+    this.selectionReset = Boolean(migrate && storedCurrent && removedUrls.has(storedCurrent.url));
+    if (migrate) {
+      const retained = this.custom.filter(item => !removedUrls.has(item.url)).map(renameLegacyNode);
+      if (JSON.stringify(retained) !== JSON.stringify(this.custom)) this.save('tk_custom', retained);
+      this.custom = retained;
+      if (Array.isArray(hidden) && JSON.stringify([...this.hidden]) !== JSON.stringify(hidden)) this.save('tk_hidden', [...this.hidden]);
+    }
+    this.current = (this.selectionReset ? null : migrate ? renameLegacyNode(storedCurrent) : storedCurrent) || this.recommended();
+    if (migrate) {
+      if (this.selectionReset || (storedCurrent && this.current.name !== storedCurrent.name)) this.save('tk_current', this.current);
+      if (this.persistent) this.save('tk_node_catalog', NODE_CATALOG_REVISION);
+    }
     this.lastChange = null;
   }
 
@@ -28,23 +49,16 @@ export class NodeStore {
     if (this.write(key, value) === false) this.persistent = false;
   }
 
-  groups(query = '') {
+  all(query = '') {
     const search = query.trim().toLocaleLowerCase('zh-CN');
-    const groups = this.defaults.map(group => ({
-      name: group.name, items: group.items.filter(item => !this.hidden.has(item.url))
-    }));
-    if (this.custom.length) groups.push({ name: '自定义链接', items: this.custom.map(item => ({ ...item, custom: true })) });
-    return groups.map(group => ({
-      ...group, items: group.items.filter(item => !search ||
-        (group.name + ' ' + item.name + ' ' + item.url).toLocaleLowerCase('zh-CN').includes(search))
-    })).filter(group => group.items.length);
+    const items = [...this.defaults.filter(item => !this.hidden.has(item.url)).map(item => ({ ...item })),
+      ...this.custom.map(item => ({ ...item, custom: true }))];
+    return items.filter(item => !search || (item.name + ' ' + item.url).toLocaleLowerCase('zh-CN').includes(search));
   }
-
-  all(query = '') { return this.groups(query).flatMap(group => group.items.map(item => ({ ...item, group: group.name }))); }
 
   recommended() {
     const available = this.all();
-    return available.find(item => item.url === RECOMMENDED_DOWNLOAD_URL) || available[0] || this.defaults[0]?.items[0];
+    return available.find(item => item.url === RECOMMENDED_DOWNLOAD_URL) || available[0] || this.defaults[0];
   }
 
   select(item) {
@@ -58,7 +72,7 @@ export class NodeStore {
     const node = sanitizeNode(item);
     if (!node) throw new Error('节点地址无效，请重新填写 HTTPS 地址。');
     if (this.custom.length >= LIMITS.maxCustomLinks) throw new Error('自定义节点已达 200 条，请先删除不需要的节点。');
-    if (this.custom.some(it => it.url === node.url) || this.defaults.some(group => group.items.some(it => it.url === node.url))) {
+    if (this.custom.some(it => it.url === node.url) || this.defaults.some(it => it.url === node.url)) {
       throw new Error('该地址已存在，可直接搜索选择；隐藏的节点请先恢复。');
     }
     this.custom.push(node); this.save('tk_custom', this.custom);

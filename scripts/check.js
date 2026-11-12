@@ -3,7 +3,8 @@ import { readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
-import { DEFAULT_GROUPS } from '../frontend/js/nodes.js';
+import { DEFAULT_NODES, REMOVED_DOWNLOAD_URLS } from '../frontend/js/nodes.js';
+import { CURATED_NODES_SHA256, RETAINED_URLS_SHA256, SCREENSHOT_REMOVED_NODES } from '../tests/fixtures/node-catalog.js';
 import { normalizeUrl } from '../frontend/js/utils.js';
 import { CONTENT_SECURITY_POLICY } from '../backend/security.js';
 import { VERSION } from '../shared/limits.js';
@@ -44,12 +45,18 @@ const reservedFormNames = new Set(['nodeName', 'tagName', 'id', 'name', 'action'
 for (const field of html.matchAll(/<(?:input|textarea|button)\b[^>]*\bname="([^"]+)"[^>]*>/g)) {
   assert(!reservedFormNames.has(field[1]), `Form field clobbers a browser property: ${field[1]}`);
 }
-const items = DEFAULT_GROUPS.flatMap(group => group.items);
-assert.equal(DEFAULT_GROUPS.length, 17); assert.equal(items.length, 161);
-assert.equal(new Set(items.map(item => item.url)).size, 154);
+const items = DEFAULT_NODES;
+assert.equal(items.length, 119);
+assert.equal(new Set(items.map(item => item.url)).size, 112);
+assert.deepEqual(REMOVED_DOWNLOAD_URLS, SCREENSHOT_REMOVED_NODES.map(item => item.url));
+assert(items.every(item => !Object.hasOwn(item, 'items') && !Object.hasOwn(item, 'group')));
 for (const item of items) normalizeUrl(item.url);
-assert.equal(createHash('sha256').update(JSON.stringify(DEFAULT_GROUPS)).digest('hex'),
-  'd5bbce4ce005981bf1b5789e2ff77ad7b8590ac84f5d8bbda98fc822835fd58e', 'Original node data changed');
+assert.equal(createHash('sha256').update(JSON.stringify(items)).digest('hex'), CURATED_NODES_SHA256, 'Curated node data changed');
+assert.equal(createHash('sha256').update(JSON.stringify(items.map(item => item.url))).digest('hex'),
+  RETAINED_URLS_SHA256, 'Unrequested URL or ordering change');
+assert(!/分组/.test(html), 'The node UI must not offer grouping');
+const app = await readFile('frontend/js/app.js', 'utf8');
+assert(!/node-group|groupOpen|store\.groups\(/.test(app), 'Node lists must remain flat in both sort modes');
 assert(!CONTENT_SECURITY_POLICY.includes('unsafe-inline') && !CONTENT_SECURITY_POLICY.includes('unsafe-eval'));
 assert.equal(JSON.parse(await readFile('package.json', 'utf8')).version, VERSION);
-console.log(`Checks passed: ${sources.length} JS files, ${ids.length} unique HTML IDs, 161 preserved nodes, strict CSP.`);
+console.log(`Checks passed: ${sources.length} JS files, ${ids.length} unique HTML IDs, 119 nodes / 112 unique URLs, 42 requested removals, strict CSP.`);

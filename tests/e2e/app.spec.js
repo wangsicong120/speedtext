@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFile } from 'node:fs/promises';
+import { EXPECTED_COMPANY_DOWNLOADS, SCREENSHOT_REMOVED_NODES } from '../fixtures/node-catalog.js';
 import { FIXTURE_ORIGIN, FIXTURE_URL, acceptNextConfirm, configureDownload,
   expectNoOverflow, installNetworkFixtures, installStreams, interceptHttps, openApp, openConfig } from './helpers.js';
 
@@ -25,7 +26,7 @@ test('limits are off, small monitoring is automatic, and downloads never auto-st
   await expect(page.locator('#duration')).toHaveValue('0');
   await expect(page.locator('#maxMiB')).toBeDisabled();
   await expect(page.locator('#duration')).toBeDisabled();
-  await expect(page.locator('#curUrl')).toContainText('speed.cloudflare.com/__down');
+  await expect(page.locator('#curUrl')).toHaveText('https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk');
   await expect(page.locator('#thread')).toHaveValue('4');
   await expect(page.locator('#cacheBust')).not.toBeChecked();
   await expect(page.locator('#keepAlive')).not.toBeChecked();
@@ -216,9 +217,71 @@ test('HTTP and browser-enforced CORS errors are explicit and bounded', async ({ 
   await expect(page.locator('#runBadge')).toHaveText('未运行');
   await expect(page.locator('#downloadRecovery')).toBeVisible();
   await page.locator('#chooseReadable').click();
-  await expect(page.locator('#curUrl')).toContainText('speed.cloudflare.com/__down');
+  await expect(page.locator('#curUrl')).toHaveText('https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk');
   await expect(page.locator('#statusLine')).toContainText('不会自动下载');
   expect(requests).toHaveLength(3);
+});
+
+test('the node manager is a single flat list with the exact removals and company download names', async ({ page }) => {
+  await openApp(page); await openConfig(page);
+  await expect(page.locator('#mSub')).toHaveText('119 条 · 112 个唯一地址 · 当前显示 119 条');
+  await expect(page.locator('#modalBody > ul.node-items')).toHaveCount(1);
+  await expect(page.locator('#modalBody > ul.node-items > li.node-row')).toHaveCount(119);
+  await expect(page.locator('#configDialog details, #configDialog summary, #configDialog optgroup')).toHaveCount(0);
+  await expect(page.locator('#searchInput')).toHaveAttribute('placeholder', '搜索名称 / 地址…');
+  const rows = await page.locator('.node-row').evaluateAll(nodes => nodes.map(node => ({
+    name: node.querySelector('.node-name').textContent, url: node.querySelector('.node-url').textContent
+  })));
+  expect(rows.slice(6, 15)).toEqual(EXPECTED_COMPANY_DOWNLOADS);
+  expect(rows.some(item => item.name.startsWith('自定义下载·'))).toBe(false);
+  for (const removed of SCREENSHOT_REMOVED_NODES) {
+    expect(rows.some(item => item.url === removed.url || item.name === removed.name), removed.name).toBe(false);
+  }
+  await page.locator('#searchInput').fill('阿里巴巴');
+  await expect(page.locator('.node-name')).toHaveText(['阿里巴巴1', '阿里巴巴2', '阿里巴巴3', '阿里巴巴4']);
+  await expect(page.locator('#mSub')).toContainText('当前显示 4 条');
+  await page.locator('#searchInput').fill('ISSUEPCDN.BAIDUPCS.COM');
+  await expect(page.locator('.node-name')).toHaveText(['百度1']);
+  await page.locator('#searchInput').fill('Vultr'); await expect(page.locator('.node-row')).toHaveCount(0);
+  await expect(page.locator('#modalBody .empty')).toBeVisible();
+});
+
+test('legacy retired addresses cannot return through saved custom nodes, current selection or restore', async ({ page }) => {
+  await page.addInitScript(removed => {
+    localStorage.setItem('tk_current', JSON.stringify(removed[6]));
+    localStorage.setItem('tk_custom', JSON.stringify([...removed, { name: '保留自定义', url: 'https://example.com/kept' }]));
+    localStorage.setItem('tk_hidden', JSON.stringify([...removed.map(item => item.url),
+      'https://issuecdn.baidupcs.com/issue/netdisk/apk/BaiduNetdiskSetup_wap_share.apk']));
+  }, SCREENSHOT_REMOVED_NODES);
+  await installStreams(page); await openApp(page);
+  await expect(page.locator('#curName')).toHaveText('阿里CDN');
+  await expect(page.locator('#statusLine')).toContainText('原测速地址已移除');
+  await expect(page.locator('#runBadge')).toHaveText('未运行');
+  expect(await page.evaluate(() => window.__fixtureRequests.length)).toBe(0);
+  await openConfig(page); await expect(page.locator('.node-row')).toHaveCount(119);
+  await page.locator('#btnRestore').click(); await expect(page.locator('.node-row')).toHaveCount(120);
+  const urls = await page.locator('.node-url').allTextContents();
+  for (const removed of SCREENSHOT_REMOVED_NODES) expect(urls).not.toContain(removed.url);
+  expect(urls).toContain('https://example.com/kept');
+  const saved = await page.evaluate(() => ({ current: JSON.parse(localStorage.getItem('tk_current')),
+    custom: JSON.parse(localStorage.getItem('tk_custom')), hidden: JSON.parse(localStorage.getItem('tk_hidden')) }));
+  expect(saved.custom).toEqual([{ name: '保留自定义', url: 'https://example.com/kept' }]);
+  expect(saved.current.url).toContain('img.alicdn.com/'); expect(saved.hidden).toEqual([]);
+});
+
+test('legacy custom-download labels update the selected node and gauge without rewriting URLs', async ({ page }) => {
+  await page.addInitScript(items => {
+    const legacy = items.map(item => ({ ...item, name: '自定义下载·' + new URL(item.url).host }));
+    localStorage.setItem('tk_custom', JSON.stringify(legacy));
+    localStorage.setItem('tk_current', JSON.stringify(legacy[5]));
+  }, EXPECTED_COMPANY_DOWNLOADS);
+  await openApp(page);
+  await expect(page.locator('#curName')).toHaveText('阿里巴巴2');
+  await expect(page.locator('#gaugeNode')).toHaveText('阿里巴巴2');
+  await expect(page.locator('#curUrl')).toHaveText(EXPECTED_COMPANY_DOWNLOADS[5].url);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('tk_custom')))).toEqual(EXPECTED_COMPANY_DOWNLOADS);
+  await openConfig(page); await expect(page.locator('#modalBody details, #modalBody summary')).toHaveCount(0);
+  await page.locator('#searchInput').fill('百度1'); await expect(page.locator('.node-name')).toHaveText(['百度1', '百度1']);
 });
 
 test('custom node names remain literal text and persist without executing HTML', async ({ page }) => {
@@ -329,9 +392,9 @@ test('batch sampling ranks by measured speed and selects the fastest only after 
     await expect(page.locator('#configNotice')).toContainText('已添加');
   };
   await openApp(page); await openConfig(page);
-  await addNode('E2E fast', 'https://fast.speedtext.example/file');
   await addNode('E2E medium', 'https://medium.speedtext.example/file');
   await addNode('E2E tiny', 'https://tiny.speedtext.example/file');
+  await addNode('E2E fast', 'https://fast.speedtext.example/file');
   await page.locator('#searchInput').fill('E2E');
   await expect(page.locator('.node-row')).toHaveCount(3);
 
@@ -344,10 +407,15 @@ test('batch sampling ranks by measured speed and selects the fastest only after 
   await expect(page.locator('#curName')).toHaveText('E2E fast');
   await expect(page.locator('#curUrl')).toHaveText('https://fast.speedtext.example/file');
   await expect(page.locator('#btnSortSpeed')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#btnSortSpeed')).toHaveText('恢复默认顺序');
+  await expect(page.locator('#modalBody details, #modalBody summary')).toHaveCount(0);
   await expect(page.locator('.node-row').first()).toHaveClass(/current/);
 
   await page.locator('#btnSortSpeed').click();
   await expect(page.locator('#btnSortSpeed')).toHaveText('按速度排序');
+  await expect(page.locator('.node-name')).toHaveText(['E2E medium', 'E2E tiny', 'E2E fast']);
+  await expect(page.locator('#modalBody > ul.node-items')).toHaveCount(1);
+  await expect(page.locator('#modalBody details, #modalBody summary')).toHaveCount(0);
   await page.locator('.node-row').filter({ hasText: 'E2E tiny' }).locator('button[data-action="select"]').click();
   await expect(page.locator('#curName')).toHaveText('E2E tiny');
   await expect(page.locator('#configDialog')).not.toBeVisible();
@@ -488,7 +556,7 @@ test('legacy storage cannot blank the page or re-enable the old 100 MiB / 60-sec
   await openApp(page); await expect(page.locator('#curUrl')).toContainText('https://');
   await expect(page.locator('#maxMiB')).toHaveValue('0'); await expect(page.locator('#duration')).toHaveValue('0');
   await expect(page.locator('#maxEnabled')).not.toBeChecked(); await expect(page.locator('#durationEnabled')).not.toBeChecked();
-  await openConfig(page); await expect(page.locator('#mSub')).toContainText('161 条 · 154 个唯一地址');
+  await openConfig(page); await expect(page.locator('#mSub')).toContainText('119 条 · 112 个唯一地址');
 });
 
 test('keyboard skip link, modal focus containment and Escape restore focus', async ({ page }) => {

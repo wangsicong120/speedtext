@@ -280,10 +280,7 @@ dialog::backdrop { background: var(--backdrop); }
 .detect-status progress { width: 140px; height: 8px; accent-color: var(--primary-fill); }
 .detect-status span { flex: 1; min-width: 200px; }
 .modal-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px calc(20px + env(safe-area-inset-bottom)); scroll-padding-top: 16px; }
-.node-group { margin-bottom: 8px; overflow: hidden; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
-.node-group > summary { min-height: 42px; padding: 10px 12px; color: var(--text); background: var(--surface-soft); cursor: pointer; font-size: 13px; font-weight: 600; }
-.group-count { margin-left: 8px; color: var(--muted); font-size: 11px; font-weight: 400; }
-.node-items { display: grid; gap: 6px; padding: 6px; }
+.node-items { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .node-row { content-visibility: auto; contain-intrinsic-size: auto 84px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; padding: 8px 10px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: 6px; }
 .node-row.current { background: var(--primary-weak); border-color: var(--primary); }
 .node-main { flex: 1; min-width: 0; }
@@ -387,7 +384,7 @@ dialog::backdrop { background: var(--backdrop); }
   .card { background: var(--surface); }
 }
 @media (forced-colors: active) {
-  .card, .stat, .node-row, .node-group, dialog { border: 1px solid CanvasText; }
+  .card, .stat, .node-row, dialog { border: 1px solid CanvasText; }
   .btn-primary { color: HighlightText; background: Highlight; border-color: Highlight; }
   .gauge-progress { stroke: Highlight; }
   .gauge-track { stroke: CanvasText; }

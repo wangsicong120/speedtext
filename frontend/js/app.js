@@ -19,7 +19,6 @@ const keep = new KeepAlive($('keepAudio'), text => { $('keepStatus').textContent
 const engine = new DownloadEngine({ onState: engineState });
 const results = new Map();
 const rowResults = new Map();
-const groupOpen = new Map();
 let searchTimer, screenTimer, ticker = null, lastHeartbeat = 0, probeSequence = 0, runInfo = null;
 let sortedResults = false;
 const title = document.title;
@@ -86,7 +85,7 @@ function controls() {
   $('maxMiB').disabled = running || !$('maxEnabled').checked;
   $('duration').disabled = running || !$('durationEnabled').checked;
   $('chooseReadable').disabled = running || detecting;
-  $('chooseReadable').textContent = store.current.url === store.recommended()?.url ? '检测或选择其他节点' : '切换推荐节点';
+  $('chooseReadable').textContent = store.current.url === store.recommended()?.url ? '检测或选择其他节点' : '切换默认节点';
   $('startBtn').disabled = !running && detecting;
   $('startBtn').textContent = running ? '停止测试' : detecting ? '节点检测进行中…' : '开始测试';
   $('startBtn').classList.toggle('btn-danger', running);
@@ -98,7 +97,7 @@ function controls() {
   $('btnDetectView').disabled = running || detecting;
   $('btnDetectStop').disabled = !detecting;
   $('btnSortSpeed').disabled = detecting || (!results.size && !sortedResults);
-  $('btnSortSpeed').textContent = sortedResults ? '恢复分组' : '按速度排序';
+  $('btnSortSpeed').textContent = sortedResults ? '恢复默认顺序' : '按速度排序';
   $('btnSortSpeed').setAttribute('aria-pressed', String(sortedResults));
   for (const button of $('modalBody').querySelectorAll('button[data-action]')) {
     button.disabled = button.dataset.action === 'probe' ? running || detecting : button.dataset.action === 'select' ? running : false;
@@ -204,7 +203,7 @@ function paintResult(node, result) {
 function paintUrl(url, result) { for (const node of rowResults.get(url) || []) paintResult(node, result); }
 
 function nodeRow(item) {
-  const row = element('div', 'node-row' + (item.url === store.current.url ? ' current' : ''));
+  const row = element('li', 'node-row' + (item.url === store.current.url ? ' current' : ''));
   const main = element('div', 'node-main');
   main.append(element('div', 'node-name', item.name), element('div', 'node-url', item.url));
   const result = element('div', 'node-result'); paintResult(result, results.get(item.url));
@@ -224,49 +223,20 @@ function nodeRow(item) {
 
 function renderConfig() {
   const query = $('searchInput').value;
-  const groups = store.groups(query), all = store.all(), unique = deduplicate(all);
-  const shown = deduplicate(groups.flatMap(group => group.items));
-  $('mSub').textContent = `${all.length} 条 · ${unique.length} 个唯一地址 · ${groups.length} 个匹配分组`;
+  const all = store.all(), shown = store.all(query);
+  const ordered = sortedResults ? rankProbeItems(deduplicate(shown), results) : shown;
+  $('mSub').textContent = `${all.length} 条 · ${deduplicate(all).length} 个唯一地址 · 当前显示 ${ordered.length} 条`;
   $('btnRestore').disabled = store.hidden.size === 0;
   rowResults.clear();
   const fragment = document.createDocumentFragment();
-  if (sortedResults) {
-    const ordered = rankProbeItems(shown, results);
-    if (!ordered.length) fragment.append(element('p', 'empty', '没有匹配节点。试试缩短搜索词，或添加自定义 HTTPS 地址。'));
-    else {
-      const details = element('details', 'node-group');
-      const summary = element('summary', '', '实测速度排序');
-      summary.append(element('span', 'group-count', `${ordered.length} 条 · 完整采样优先，小文件与失败项置后`));
-      const body = element('div', 'node-items');
-      for (const item of ordered) body.append(nodeRow(item));
-      details.append(summary, body); details.open = true;
-      fragment.append(details);
-    }
-    $('modalBody').replaceChildren(fragment); controls(); return;
+  if (ordered.length) {
+    const list = element('ul', 'node-items');
+    list.setAttribute('role', 'list');
+    list.setAttribute('aria-label', sortedResults ? '测速地址（按实测速度排序）' : '测速地址');
+    for (const item of ordered) list.append(nodeRow(item));
+    fragment.append(list);
   }
-  for (const [index, group] of groups.entries()) {
-    const details = element('details', 'node-group');
-    const summary = element('summary', '', group.name);
-    summary.append(element('span', 'group-count', group.items.length + ' 条'));
-    const body = element('div', 'node-items');
-    let populated = false;
-    const populate = () => {
-      if (populated) return;
-      populated = true;
-      for (const item of group.items) body.append(nodeRow(item));
-      controls();
-    };
-    details.append(summary, body);
-    details.open = query.trim() ? true : (groupOpen.get(group.name) ?? index === 0);
-    if (details.open) populate();
-    details.addEventListener('toggle', () => {
-      if (!details.isConnected) return;
-      if (!query.trim()) groupOpen.set(group.name, details.open);
-      if (details.open) populate();
-    });
-    fragment.append(details);
-  }
-  if (!groups.length) fragment.append(element('p', 'empty', '没有匹配节点。试试缩短搜索词，或添加自定义 HTTPS 地址。'));
+  else fragment.append(element('p', 'empty', '没有匹配节点。试试缩短搜索词，或添加自定义 HTTPS 地址。'));
   $('modalBody').replaceChildren(fragment); controls();
 }
 
@@ -279,7 +249,7 @@ $('chooseReadable').addEventListener('click', () => {
   const recommended = store.recommended();
   if (!recommended || store.current.url === recommended.url) { $('searchInput').value = ''; openConfig(); return; }
   selectNode(recommended); $('downloadRecovery').hidden = true;
-  status('已切换推荐节点；不会自动下载，可先检测可读性，再点击开始。');
+  status('已切换默认节点；不会自动下载，可先检测可读性，再点击开始。');
 });
 $('closeConfig').addEventListener('click', () => $('configDialog').close());
 $('configDialog').addEventListener('close', () => {
@@ -316,7 +286,7 @@ $('addForm').addEventListener('submit', event => {
     const url = normalizeUrl($('addUrl').value);
     const item = store.add({ name: $('addName').value, url });
     fieldError('addUrl', 'addError'); $('addForm').reset(); $('addForm').hidden = true;
-    $('searchInput').value = ''; groupOpen.set('自定义链接', true); renderConfig();
+    $('searchInput').value = ''; renderConfig();
     notice('已添加“' + item.name + '”，配置仅存于当前浏览器。'); $('searchInput').focus();
   } catch (error) { fieldError('addUrl', 'addError', error.message); $('addUrl').focus(); }
 });
@@ -374,7 +344,7 @@ $('btnDetectStop').addEventListener('click', () => { queue.stop(); saveResults()
 $('btnSortSpeed').addEventListener('click', () => {
   sortedResults = !sortedResults;
   renderConfig();
-  notice(sortedResults ? '已按实测速度排列；小文件与未完成采样置后。' : '已恢复按原分组显示。');
+  notice(sortedResults ? '已按实测速度排列；小文件与未完成采样置后。' : '已恢复默认顺序。');
 });
 
 async function showCopy(text) {
@@ -454,5 +424,6 @@ if (savedResults && typeof savedResults === 'object' && !Array.isArray(savedResu
 }
 selectNode(store.current);
 $('brandVer').textContent = 'v' + VERSION;
-controls(); status(navigator.onLine ? '就绪。点击开始前，请确认节点和流量限制。' : '当前离线，请联网后再开始测试。');
+controls(); status(navigator.onLine ? store.selectionReset ? '原测速地址已移除，已切换默认节点；不会自动开始下载。' :
+  '就绪。点击开始前，请确认节点和流量限制。' : '当前离线，请联网后再开始测试。');
 startTicker(); network.start();

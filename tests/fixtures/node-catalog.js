@@ -1,0 +1,60 @@
+// 用户六张截图中的精确删除清单；剩余 URL 的顺序/字节以迁移前数据核验。
+export const SCREENSHOT_REMOVED_NODES = [
+  { name: 'Vultr 1G(新加坡)', url: 'https://sgp-ping.vultr.com/vultr.com.1000MB.bin' },
+  { name: 'Vultr 1G(纽约)', url: 'https://nj-us-ping.vultr.com/vultr.com.1000MB.bin' },
+  { name: 'Vultr 1G(日本)', url: 'https://hnd-jp-ping.vultr.com/vultr.com.100MB.bin' },
+  { name: 'Vultr 1G(德国)', url: 'https://fra-de-ping.vultr.com/vultr.com.100MB.bin' },
+  { name: 'Vultr 1G(美国洛杉矶)', url: 'https://lax-ca-us-ping.vultr.com/vultr.com.100MB.bin' },
+  { name: 'Vultr 1G(美国2)', url: 'https://nj-us-ping.vultr.com/vultr.com.100MB.bin' },
+  { name: 'Cloudflare Speed [Global]', url: 'https://speed.cloudflare.com/__down?bytes=1073741824' },
+  { name: '华为官网-图片资源1', url: 'https://consumer.huawei.com/content/dam/huawei-cbg-site/cn/mkt/huawei-cloud-service/appgallery/application-boutique-pc1.jpg' },
+  { name: '京东商城-静态资源4', url: 'https://storage.jd.com/jdmobile/JDMALL-PC2.apk' },
+  { name: '网易公开课(白云山CDN)', url: 'https://mov.bn.netease.com/movieMP4/2011/3/U/1/S6V22L0U1.mp4' },
+  { name: '百度网盘-静态资源4', url: 'https://staticiot.cdn.bcebos.com/union/badjs-sdk-min-2.0.0.js' },
+  { name: '淘宝-静态资源3', url: 'https://at.alicdn.com/t/a/font_403341_6q1chd11nes.woff2' },
+  { name: 'Google-静态资源1', url: 'https://fonts.gstatic.com/s/roboto/v47/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBA.woff2' },
+  { name: 'QQ安全中心-静态资源1', url: 'https://js.aq.qq.com/js/aq_common.js' },
+  { name: '中国移动业务-图片资源2', url: 'https://res.app.coc.10086.cn/group1/M00/03/0D/CtFOBmTxRyaAYjdGAAAhPGgdCJw206.png' },
+  { name: '微信-静态资源1[定向]', url: 'https://res.wx.qq.com/open/js/jweixin-1.6.0.js' },
+  { name: 'Github-图片资源1', url: 'https://github.githubassets.com/images/mona-whisper.gif' },
+  { name: '咪咕快游-图片资源5(中国移动)', url: 'https://gcache.migu.cn/prod/upload/game_resource/channel_for_homepage_game2/202408/2909/59/20240829095855985_mgwebp1.jpg' },
+  { name: '天翼云会议-静态资源1(中国电信)', url: 'https://cloudmeeting.189.cn/static/js/chunk-vendors.624b9116.js' },
+  { name: 'Github-静态资源1', url: 'https://github.githubassets.com/assets/optimizely-f41bb566674d.js' },
+  { name: 'Wegame-静态资源1[统计不准确]', url: 'https://cdn-go.cn/vasdev/web_webpersistance_v2/latest/flog.core.min.js' },
+  { name: '咪咕音乐-静态资源2[统计不准确]', url: 'https://webpay.migu.cn:8443/migunetsdk/webJs/frame.html?netId=b486900f41fc411187240dcb45fdbc8d&client=WWW&umark=Common2&protocol=https&mv=3.0.1&t=1704113156924' },
+  { name: '咪咕音乐-静态资源1', url: 'https://wsdkdl.migu.cn/common/mgmusic/migu_https.js' },
+  { name: '百度网盘-静态资源5', url: 'https://code.bdstatic.com/npm/spy-client@2.0.3/dist/spy-client-basic.min.js' },
+  { name: '联通官网-图片资源3(中国联通)', url: 'https://iservice.10010.com/wt_manage/uploadImg/1730297793913.png' },
+  { name: 'Cloudflare-静态资源1', url: 'https://challenges.cloudflare.com/turnstile/v0/g/ec4b873d446c/api.js' },
+  { name: '书旗小说-图片广告05', url: 'https://p1.meituan.net/linglong/2a7ff2c8b1928507c721c577762b8321285561.jpg' },
+  { name: '书旗小说-图片广告09', url: 'https://cdn.1rtb.com/s1000/jd.jpg' },
+  { name: '咪咕视频-图片资源2', url: 'https://wapx.cmvideo.cn/publish/poms/image/1752/094/251/202311151425_477841_HSJ1080H.jpg' },
+  { name: '百度贴吧-静态资源2', url: 'https://efe-h2.cdn.bcebos.com/cliresource/@baidu/ubc-report-sdk/3.3.3/ubc-report-sdk.iife.polyfill.min.js' },
+  { name: '百度视频-图片资源2', url: 'https://pic.rmb.bdstatic.com/baidu-rmb-video-cover-1/2024-1/1705996556941/724684ad74c9.png' },
+  { name: 'apple-静态资源1', url: 'https://appleid.cdn-apple.com/appleauth/static/jsapi/appleid/1/en_US/appleid.auth.js' },
+  { name: 'apple-图片资源1', url: 'https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/60/60/23/606023fb-33d6-79e8-bcfe-7793257abd65/3_iOS_6.7.jpg/230x0w.webp' },
+  { name: '小米开放平台-静态资源5', url: 'https://static-verify.sec.xiaomi.com/v2/js/v.js' },
+  { name: '小米开放平台-静态资源4', url: 'https://mcfe--account-static-legacy.cnbj1.mi-fds.com/mcfe--account-static-legacy/static/prod/captcha-static/v2/js/v.js' },
+  { name: '哔哩哔哩-图片资源1[定向]', url: 'https://static.hdslb.com/images/base/icons.png' },
+  { name: '咪咕快游-图片资源2(中国移动)[非定向]', url: 'https://static.migucloud.com/article/462/20191213/4f23d49723e5a46938718a3f4587734f.png' },
+  { name: '优酷-图片资源3', url: 'https://static.youku.com/user/avatar/1350/23.png' },
+  { name: '书旗小说-图片广告03', url: 'https://img.meituan.net/content/f56fe3456d25d951cdd32efa56d608a290831.jpg' },
+  { name: '百度视频-静态资源1', url: 'https://jmy-video.baidu.com/7b828dab3003f3841f3a026b437cf879_1280_720.mp4' },
+  { name: '华为云-静态资源1', url: 'https://res.hc-cdn.com/cnpm-baseui/2.8.11/fonts/HuaweiSans-Bold.ttf' },
+  { name: 'Google-静态资源2', url: 'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=YouTube+Sans:wght@300..900&display=swap' }
+];
+
+export const EXPECTED_COMPANY_DOWNLOADS = [
+  { name: '朝夕光年', url: 'https://lf5-j1gamecdn-cn.dailygn.com/obj/lf-game-lf/gdl_app_2682/1233880772355.mp4' },
+  { name: '百度1', url: 'https://issuepcdn.baidupcs.com/issue/netdisk/yunguanjia/BaiduNetdisk_7.54.0.103.exe' },
+  { name: '百度2', url: 'https://wppkg.baidupcs.com/issue/netdisk/apk/BaiduNetdisk_10.1.02.apk' },
+  { name: '爱奇艺', url: 'https://static-d.iqiyi.com/ext/common/iQIYIMedia_000.dmg' },
+  { name: '阿里巴巴1', url: 'https://gw.alicdn.com/tfscom/TB1fASCxhjaK1RjSZKzXXXVwXXa.jpg' },
+  { name: '阿里巴巴2', url: 'https://img.alicdn.com/imgextra/i1/O1CN01xA4P9S1JsW2WEg0e1_!!6000000001084-2-tps-2880-560.png' },
+  { name: '阿里巴巴3', url: 'https://gw.alicdn.com/tfs/TB1k07QUoY1gK0jSZFCXXcwqXXa-810-450.png' },
+  { name: '阿里巴巴4', url: 'https://cloud.video.taobao.com/play/u/null/p/1/e/6/t/1/442087612070.mp4' },
+  { name: '字节跳动', url: 'https://lf9-static.bytednsdoc.com/obj/eden-cn/uhbfnupkbps/video/earth_v6.mp4' }
+];
+
+export const RETAINED_URLS_SHA256 = '8ceb15173aff623f3ac1e33b4092b036c4f1e273090db289d290be8fd6d1bc95';
+export const CURATED_NODES_SHA256 = '3d85f5b0e9a0a98d55ba0948d89c21723ef45227cad6de9d25c8721add8b05e7';
