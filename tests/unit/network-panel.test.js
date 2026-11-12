@@ -206,13 +206,16 @@ test('manual cancellation preserves previous successful results and aborts every
   assert(environment.calls.every(call => call.signal.aborted)); assert.equal(environment.timers.size, 1);
 });
 
-test('visible HTTP errors are warnings while opaque responses are only labelled response arrivals', async t => {
+test('visible HTTP errors remain warnings while opaque results show only elapsed milliseconds', async t => {
   const environment = create(t, { fetchImpl: (url, options) => url === 'https://github.com/favicon.ico' ?
     new Response('error', { status: 500 }) : response(url, options) });
   await start(environment);
   assert.match(environment.node('laygh').textContent, /HTTP 500/); assert.equal(environment.node('laygh').className, 'r-warn');
-  assert.match(environment.node('laycn').textContent, /状态不可读/);
-  assert(!environment.node('laycn').textContent.includes('HTTP 200'));
+  for (const id of ['laycn', 'laygb', 'layyt']) {
+    assert.match(environment.node(id).textContent, /^\d+ ms$/);
+    assert.equal(environment.node(id).className, 'r-ok');
+  }
+  assert.match(environment.node('networkStatus').textContent, /跨域响应到达不等于 HTTP 成功或服务可登录/);
 });
 
 test('all IP services failing stays usable and schedules only the next bounded round', async t => {

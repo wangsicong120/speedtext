@@ -239,7 +239,7 @@ export class NetworkPanel {
         if (child.signal.aborted) throw abortError();
         const opaque = response.type === 'opaque';
         return { id, ok: opaque || response.ok, message: Math.round(this.now() - started) +
-          (opaque ? ' ms（响应到达，状态不可读）' : ' ms（HTTP ' + response.status + '，响应到达）') };
+          (opaque ? ' ms' : ' ms（HTTP ' + response.status + '，响应到达）') };
       } catch { return { id, ok: false, message: signal.aborted ? '已取消' : '未测得（超时或网络限制）' }; }
       finally {
         clearTimeout(timer); signal.removeEventListener('abort', abort); child.abort();

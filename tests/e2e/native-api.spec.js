@@ -42,7 +42,7 @@ test('native connectivity and timers complete a second automatic monitoring roun
   const { requests, errors: httpErrors } = await installHttpFixtures(page); await openApp(page);
   await expect(page.locator('#ipCurrent')).toHaveText('198.51.100.8');
   await expect(page.locator('#refreshNetwork')).toHaveText('立即刷新');
-  for (const id of ['laycn', 'laygb', 'laygh', 'layyt']) await expect(page.locator('#' + id)).toContainText('响应到达');
+  for (const id of ['laycn', 'laygb', 'laygh', 'layyt']) await expect(page.locator('#' + id)).toHaveText(/^\d+ ms$/);
   expect(requests).toHaveLength(6); expect(errors).toEqual([]);
   expect(await page.evaluate(() => [window.fetch, window.setTimeout, window.clearTimeout]
     .every(callback => callback.toString().includes('[native code]')))).toBe(true);

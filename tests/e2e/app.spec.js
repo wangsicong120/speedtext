@@ -406,7 +406,7 @@ test('IP and connectivity update automatically, pause when disabled, and keep ex
   expect(requests).toHaveLength(6); expect(errors).toEqual([]);
   await expect(page.locator('#ipCurrent')).toHaveText('198.51.100.8');
   await expect(page.locator('#ipSource')).toContainText('第三方');
-  for (const id of ['laycn', 'laygb', 'laygh', 'layyt']) await expect(page.locator('#' + id)).toContainText('响应到达');
+  for (const id of ['laycn', 'laygb', 'laygh', 'layyt']) await expect(page.locator('#' + id)).toHaveText(/^\d+ ms$/);
   await page.clock.fastForward(30000);
   await expect.poll(() => requests.length).toBe(12);
   await expect(page.locator('#refreshNetwork')).toHaveText('立即刷新');
