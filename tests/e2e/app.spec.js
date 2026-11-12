@@ -82,10 +82,13 @@ test('the live gauge uses Mbps, tracks the selected node and resets on stop with
   await expect(page.locator('#gaugeLocation')).toHaveText('ZZ');
   await expect(page.locator('#gaugeProvider')).toBeHidden();
   await expect(page.locator('#gaugeSource')).toHaveText('第三方');
-  await expect(page.locator('#gaugeLatency')).toHaveText(/^\d+ms$/);
+  await expect(page.locator('#gaugeLatency')).toHaveText('— ms');
 
   await configureDownload(page, { threads: 1 }); await page.locator('#startBtn').click();
   await expect.poll(async () => Number(await page.locator('#gaugeValue').textContent())).toBeGreaterThan(0);
+  const firstByte = (await page.locator('#statusLine').textContent()).match(/首块响应 (\d+) ms/);
+  expect(firstByte).not.toBeNull();
+  await expect(page.locator('#gaugeLatency')).toHaveText(firstByte[1] + 'ms');
   const values = await page.evaluate(() => ({
     gauge: Number(document.getElementById('gaugeValue').textContent),
     stats: Number(document.getElementById('vMbps').textContent.replace(/[^\d.]/g, '')),
@@ -95,7 +98,7 @@ test('the live gauge uses Mbps, tracks the selected node and resets on stop with
   expect(values.offset).toBeGreaterThanOrEqual(0); expect(values.offset).toBeLessThan(100);
   await expect(page.locator('#gaugeArc')).toHaveAttribute('visibility', 'visible');
   await expect(page.locator('#gaugeNode')).toHaveText(await page.locator('#curName').textContent());
-  await expect(page.locator('#chart')).toHaveAttribute('aria-label', /实时下载带宽.*Mbps.*HTTP 首响应/);
+  await expect(page.locator('#chart')).toHaveAttribute('aria-label', /实时下载带宽.*Mbps.*测试连接首块响应/);
   await page.locator('#startBtn').click();
   await expect(page.locator('#gaugeValue')).toHaveText('0.0');
   await expect(page.locator('#gaugeArc')).toHaveAttribute('visibility', 'hidden');
@@ -506,6 +509,11 @@ test('responsive portrait and landscape layouts retain usable touch targets and 
   for (const viewport of [{ width: 375, height: 812 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) {
     await page.setViewportSize(viewport); await expectNoOverflow(page);
   }
+  const desktopHeights = await page.evaluate(() => {
+    const height = selector => document.querySelector(selector).getBoundingClientRect().height;
+    return { settings: height('.card[aria-labelledby="settingsTitle"]'), chart: height('.card[aria-labelledby="chartTitle"]') };
+  });
+  expect(Math.abs(desktopHeights.settings - desktopHeights.chart)).toBeLessThanOrEqual(1);
   await page.setViewportSize({ width: 375, height: 812 }); await openConfig(page);
   await page.locator('#btnAdd').click(); await expectNoOverflow(page);
   for (const id of ['screenBtn', 'openConfig', 'themeBtn', 'closeConfig', 'btnAdd', 'btnDetect', 'btnDetectView']) {

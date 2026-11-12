@@ -81,12 +81,12 @@ const targets = [
 ];
 
 export class NetworkPanel {
-  constructor({ onLatency = () => {}, onInfo = () => {}, fetchImpl = globalThis.fetch, documentRef = globalThis.document,
+  constructor({ onInfo = () => {}, fetchImpl = globalThis.fetch, documentRef = globalThis.document,
     isOnline = () => globalThis.navigator.onLine, now = () => performance.now(), wallNow = () => Date.now(),
     intervalMs = LIMITS.networkRefreshMs, requestTimeoutMs = 8000, connectivityTimeoutMs = 5000,
     setTimer = setTimeout, clearTimer = clearTimeout, read = readStorage, write = writeStorage } = {}) {
     // 原生 Window API 若作为类成员直接调用会产生 Illegal invocation。
-    this.onLatency = onLatency; this.onInfo = onInfo; this.fetch = (...args) => fetchImpl(...args); this.document = documentRef;
+    this.onInfo = onInfo; this.fetch = (...args) => fetchImpl(...args); this.document = documentRef;
     this.isOnline = isOnline; this.now = now; this.wallNow = wallNow;
     this.intervalMs = intervalMs; this.requestTimeoutMs = requestTimeoutMs;
     this.connectivityTimeoutMs = connectivityTimeoutMs;
@@ -142,7 +142,7 @@ export class NetworkPanel {
 
   pause(reason = 'hidden') {
     this.paused = true; this.stopAll();
-    this.latency = null; this.onLatency(null);
+    this.latency = null;
     this.status(reason === 'offline' ? '网络离线，自动更新已暂停；之前结果可能过期。' : '页面后台或已离开，自动更新已暂停；之前结果可能过期。');
   }
 
@@ -249,7 +249,7 @@ export class NetworkPanel {
   }
 
   setLatency(latency) {
-    this.latency = Number.isFinite(latency) ? latency : null; this.onLatency(this.latency);
+    this.latency = Number.isFinite(latency) ? latency : null;
     this.output('localLatency', this.latency === null ? '未测得' : this.latency + ' ms', this.latency === null ? 'warn' : 'ok');
   }
 

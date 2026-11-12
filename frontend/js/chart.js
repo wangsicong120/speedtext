@@ -34,7 +34,7 @@ export class RateChart {
     this.draw();
   }
 
-  clear() { this.points = []; this.speed = 0; this.draw(); }
+  clear() { this.points = []; this.speed = 0; this.latency = null; this.draw(); }
 
   setNode(name) {
     this.nodeName = name;
@@ -105,7 +105,7 @@ export class RateChart {
     this.arc.setAttribute('visibility', this.speed > 0 ? 'visible' : 'hidden');
     this.latencyNode.textContent = this.latency === null ? '— ms' : Math.round(this.latency) + 'ms';
     this.latencyNode.classList.toggle('is-unavailable', this.latency === null);
-    this.root.setAttribute('aria-label', `实时下载带宽 ${value} Mbps，节点 ${this.nodeName || '加载中'}，本站 HTTP 首响应 ${this.latency === null ? '未测得' : Math.round(this.latency) + ' 毫秒'}。${this.info ? [this.info.location, this.info.organization, this.info.source].filter(Boolean).join('，') + '。' : ''}${this.points.length ? `本次已记录 ${this.points.length} 个采样点。` : '开始测试后更新。'}`);
+    this.root.setAttribute('aria-label', `实时下载带宽 ${value} Mbps，节点 ${this.nodeName || '加载中'}，测试连接首块响应 ${this.latency === null ? '未测得' : Math.round(this.latency) + ' 毫秒'}。${this.info ? [this.info.location, this.info.organization, this.info.source].filter(Boolean).join('，') + '。' : ''}${this.points.length ? `本次已记录 ${this.points.length} 个采样点。` : '开始测试后更新。'}`);
   }
 
   draw() {

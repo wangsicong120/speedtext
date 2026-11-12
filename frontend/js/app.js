@@ -13,7 +13,6 @@ const store = new NodeStore();
 const queue = new ProbeQueue();
 const chart = new RateChart($('chart'));
 const network = new NetworkPanel({
-  onLatency: latency => chart.setLatency(latency, document.visibilityState === 'visible' && !$('screenOff').open),
   onInfo: info => chart.setNetworkInfo(info)
 });
 const keep = new KeepAlive($('keepAudio'), text => { $('keepStatus').textContent = text; });
@@ -36,10 +35,12 @@ function fieldError(input, output, text = '') {
 }
 
 function selectNode(item) {
+  const previousUrl = store.current?.url;
   const node = store.select(item);
   $('curName').textContent = node.name; $('curName').title = node.name;
   $('curUrl').textContent = node.url; $('curUrl').title = node.url;
   $('diyLink').value = node.url;
+  if (node.url !== previousUrl) chart.setLatency(null, document.visibilityState === 'visible' && !$('screenOff').open);
   chart.setNode(node.name);
   fieldError('diyLink', 'linkError');
   return node;
@@ -110,7 +111,9 @@ function displayStats(snapshot = engine.snapshot(false)) {
   $('vMbps').textContent = (snapshot.speed * 8 / 1000000).toLocaleString('zh-CN', { maximumFractionDigits: 2 }) + ' Mbps';
   $('vAvg').textContent = formatSpeed(snapshot.average);
   $('elapsed').textContent = '已运行 ' + Math.floor(snapshot.elapsed).toLocaleString('zh-CN') + ' 秒';
-  chart.setSpeed(snapshot.speed, document.visibilityState === 'visible' && !$('screenOff').open);
+  chart.setSpeed(snapshot.speed, false);
+  chart.setLatency(snapshot.firstByteMs, false);
+  if (document.visibilityState === 'visible' && !$('screenOff').open) chart.draw();
   document.title = snapshot.running ? formatBytes(snapshot.bytes) + ' · ' + formatSpeed(snapshot.speed) + ' · 流量消耗器' : title;
 }
 
@@ -416,7 +419,7 @@ function startTicker() {
   ticker = setInterval(() => {
     const wasRunning = engine.running, snapshot = engine.tick();
     const visible = document.visibilityState === 'visible' && !$('screenOff').open;
-    if (wasRunning) chart.push(snapshot.speed, network.latency, Date.now(), visible);
+    if (wasRunning) chart.push(snapshot.speed, snapshot.firstByteMs, Date.now(), visible);
     if (visible || wasRunning) displayStats(snapshot);
     if (snapshot.running && visible && performance.now() - lastHeartbeat >= 5000) {
       lastHeartbeat = performance.now(); network.heartbeat();
