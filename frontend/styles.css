@@ -131,7 +131,7 @@ svg { display: block; }
 .wrap > .card[aria-labelledby="chartTitle"] { grid-column: 2; display: flex; flex-direction: column; }
 .wrap > .card[aria-labelledby="chartTitle"] > .card-inner { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .wrap > .card[aria-labelledby="networkTitle"] { grid-column: 1 / -1; }
-.instructions, footer, noscript { grid-column: 1 / -1; }
+noscript { grid-column: 1 / -1; }
 
 .section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
 .section-head h2 { font-size: 16px; }
@@ -263,12 +263,6 @@ label { display: block; margin-bottom: 5px; color: var(--muted); font-size: 12px
 .network-list dd.r-bad { color: var(--bad); }
 .network-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .network-actions .check-label { min-height: 44px; }
-
-.instructions { padding: 12px 16px; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; }
-.instructions summary { padding: 3px 0; color: var(--text); cursor: pointer; font-weight: 600; }
-.instructions p { margin-top: 10px; }
-footer { margin-top: 2px; text-align: center; color: var(--muted); font-size: 11px; }
-footer a { white-space: nowrap; }
 
 /* Native dialogs and the preserved node manager. */
 dialog { margin: auto; padding: 0; color: var(--text); background: var(--surface); border: 1px solid var(--blue-line); border-radius: 8px; box-shadow: 0 20px 70px rgba(15, 23, 42, .22); }

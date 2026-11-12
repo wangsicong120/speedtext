@@ -453,6 +453,6 @@ if (savedResults && typeof savedResults === 'object' && !Array.isArray(savedResu
   }
 }
 selectNode(store.current);
-$('brandVer').textContent = 'v' + VERSION; $('footerVersion').textContent = VERSION;
+$('brandVer').textContent = 'v' + VERSION;
 controls(); status(navigator.onLine ? '就绪。点击开始前，请确认节点和流量限制。' : '当前离线，请联网后再开始测试。');
 startTicker(); network.start();
