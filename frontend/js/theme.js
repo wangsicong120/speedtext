@@ -6,7 +6,7 @@ if (saved !== 'light' && saved !== 'dark') saved = null;
 
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  document.getElementById('metaTheme')?.setAttribute('content', theme === 'dark' ? '#080a10' : '#eef2fb');
+  document.getElementById('metaTheme')?.setAttribute('content', theme === 'dark' ? '#0c101a' : '#f4f7fb');
   const button = document.getElementById('themeBtn');
   if (button) button.setAttribute('aria-label', theme === 'dark' ? '切换为浅色主题' : '切换为深色主题');
 }

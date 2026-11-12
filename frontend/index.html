@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#eef2fb" id="metaTheme">
+  <meta name="theme-color" content="#f4f7fb" id="metaTheme">
   <meta name="color-scheme" content="light dark">
   <meta name="referrer" content="no-referrer">
   <meta name="description" content="轻量网络测速与流量测试工具：支持并发流式下载、流量和时长限制、节点采样、出口 IP 和连通性检测。">
@@ -19,11 +19,11 @@
     <div class="header-inner">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 15h4l3-10 4 15 3-8h4"/></svg></span>
-        <h1>流量消耗器</h1><span class="version" id="brandVer" translate="no">v3.2.0</span>
+        <div class="brand-copy"><div class="brand-title"><h1>流量消耗器</h1><span class="version" id="brandVer" translate="no">v3.2.0</span></div><span class="brand-sub">网络测速与流量控制</span></div>
       </div>
       <button type="button" class="icon-btn" id="screenBtn" title="进入伪熄屏" aria-label="进入伪熄屏"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M8 21h8M12 17v4M3 3l18 18"/></svg></button>
       <button type="button" class="icon-btn" id="openConfig" title="地址配置与检测" aria-label="地址配置与检测"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></svg></button>
-      <button type="button" class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换为深色主题"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg></button>
+      <button type="button" class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换为深色主题"><svg class="theme-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg><svg class="theme-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg></button>
     </div>
   </header>
 
@@ -67,22 +67,24 @@
     </section>
 
     <section class="card" aria-labelledby="chartTitle">
-      <h2 id="chartTitle" class="visually-hidden">实时趋势</h2>
-      <div id="chart" class="speedometer card-inner" role="img" aria-label="实时下载带宽仪表盘，开始测试后更新。">
-        <div class="gauge-dial">
-          <svg viewBox="0 0 420 328" aria-hidden="true">
-            <path class="gauge-track" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137"/>
-            <path id="gaugeArc" class="gauge-progress" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100" visibility="hidden"/>
-            <g id="gaugeTicks"></g>
-            <text id="gaugeValue" class="gauge-value" x="210" y="206" text-anchor="middle" font-size="100">0.0</text>
-            <text class="gauge-unit" x="210" y="263" text-anchor="middle">Mbps</text>
-          </svg>
-        </div>
-        <p id="gaugeNode" class="gauge-node">正在加载节点…</p>
-        <div class="gauge-network" id="gaugeNetwork">
-          <span id="gaugeLatency" class="gauge-latency is-unavailable" title="本站 HTTP 首响应时间，并非 ICMP Ping">— ms</span>
-          <div class="gauge-network-info"><strong id="gaugeLocation" class="gauge-location">等待检测出口网络</strong><span id="gaugeProvider" class="gauge-provider" hidden></span></div>
-          <span id="gaugeSource" class="gauge-source" hidden></span>
+      <div class="card-inner">
+        <div class="section-head"><h2 id="chartTitle">实时带宽</h2><span class="badge unit-badge">Mbps</span></div>
+        <div id="chart" class="speedometer" role="img" aria-label="实时下载带宽仪表盘，开始测试后更新。">
+          <div class="gauge-dial">
+            <svg viewBox="0 0 420 328" aria-hidden="true">
+              <path class="gauge-track" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137"/>
+              <path id="gaugeArc" class="gauge-progress" d="M96.863 304.137 A160 160 0 1 1 323.137 304.137" pathLength="100" stroke-dasharray="100 100" stroke-dashoffset="100" visibility="hidden"/>
+              <g id="gaugeTicks"></g>
+              <text id="gaugeValue" class="gauge-value" x="210" y="206" text-anchor="middle" font-size="100">0.0</text>
+              <text class="gauge-unit" x="210" y="263" text-anchor="middle">Mbps</text>
+            </svg>
+          </div>
+          <p id="gaugeNode" class="gauge-node">正在加载节点…</p>
+          <div class="gauge-network" id="gaugeNetwork">
+            <span id="gaugeLatency" class="gauge-latency is-unavailable" title="本站 HTTP 首响应时间，并非 ICMP Ping">— ms</span>
+            <div class="gauge-network-info"><strong id="gaugeLocation" class="gauge-location">等待检测出口网络</strong><span id="gaugeProvider" class="gauge-provider" hidden></span></div>
+            <span id="gaugeSource" class="gauge-source" hidden></span>
+          </div>
         </div>
       </div>
     </section>
